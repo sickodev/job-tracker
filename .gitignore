@@ -43,3 +43,6 @@ next-env.d.ts
 # prisma databases
 *.db
 *.db-journal
+
+# ide
+.vscode/
