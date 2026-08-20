@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { JobApplication, JobStatus, CompanyType, WorkplaceType, Priority } from "@/types";
 import { useJobs } from "@/context/JobContext";
 import { CompanyAvatar } from "./CompanyAvatar";
-import { X, Star, FileText, Loader2, Upload, Trash2 } from "lucide-react";
+import { X, Star, FileText, Loader2, Upload, Trash2, ChevronDown, Calendar } from "lucide-react";
 import confetti from "canvas-confetti";
 
 interface JobModalProps {
@@ -220,34 +220,40 @@ export function JobModal({ isOpen, onClose, onDelete, editingJob }: JobModalProp
               <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
                 Target Sheet
               </label>
-              <select
-                value={sheetId}
-                onChange={(e) => setSheetId(e.target.value)}
-                className="w-full px-3 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 text-xs focus:outline-none focus:border-amber-400 cursor-pointer"
-              >
-                {sheets.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
+              <div className="relative inline-flex items-center w-full">
+                <select
+                  value={sheetId}
+                  onChange={(e) => setSheetId(e.target.value)}
+                  className="appearance-none w-full pl-3 pr-8 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 text-xs focus:outline-none focus:border-amber-400 cursor-pointer"
+                >
+                  {sheets.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-4 h-4 absolute right-2.5 text-zinc-400 pointer-events-none" />
+              </div>
             </div>
 
             <div>
               <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
                 Company Category
               </label>
-              <select
-                value={companyType}
-                onChange={(e) => setCompanyType(e.target.value as CompanyType)}
-                className="w-full px-3 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 text-xs focus:outline-none focus:border-amber-400 cursor-pointer"
-              >
-                {COMPANY_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
+              <div className="relative inline-flex items-center w-full">
+                <select
+                  value={companyType}
+                  onChange={(e) => setCompanyType(e.target.value as CompanyType)}
+                  className="appearance-none w-full pl-3 pr-8 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 text-xs focus:outline-none focus:border-amber-400 cursor-pointer"
+                >
+                  {COMPANY_TYPES.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-4 h-4 absolute right-2.5 text-zinc-400 pointer-events-none" />
+              </div>
             </div>
           </div>
 
@@ -296,51 +302,60 @@ export function JobModal({ isOpen, onClose, onDelete, editingJob }: JobModalProp
               <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
                 Stage
               </label>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value as JobStatus)}
-                className="w-full px-3 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 text-xs focus:outline-none focus:border-amber-400 cursor-pointer"
-              >
-                {STATUS_OPTIONS.map((st) => (
-                  <option key={st} value={st}>
-                    {st === "Offer" ? "🎉 " : ""}{st}
-                  </option>
-                ))}
-              </select>
+              <div className="relative inline-flex items-center w-full">
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value as JobStatus)}
+                  className="appearance-none w-full pl-3 pr-8 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 text-xs focus:outline-none focus:border-amber-400 cursor-pointer"
+                >
+                  {STATUS_OPTIONS.map((st) => (
+                    <option key={st} value={st}>
+                      {st === "Offer" ? "🎉 " : ""}{st}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-4 h-4 absolute right-2.5 text-zinc-400 pointer-events-none" />
+              </div>
             </div>
 
             <div>
               <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
                 Workplace
               </label>
-              <select
-                value={workplaceType}
-                onChange={(e) => setWorkplaceType(e.target.value as WorkplaceType)}
-                className="w-full px-3 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 text-xs focus:outline-none focus:border-amber-400 cursor-pointer"
-              >
-                {WORKPLACE_TYPES.map((wt) => (
-                  <option key={wt} value={wt}>
-                    {wt}
-                  </option>
-                ))}
-              </select>
+              <div className="relative inline-flex items-center w-full">
+                <select
+                  value={workplaceType}
+                  onChange={(e) => setWorkplaceType(e.target.value as WorkplaceType)}
+                  className="appearance-none w-full pl-3 pr-8 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 text-xs focus:outline-none focus:border-amber-400 cursor-pointer"
+                >
+                  {WORKPLACE_TYPES.map((wt) => (
+                    <option key={wt} value={wt}>
+                      {wt}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-4 h-4 absolute right-2.5 text-zinc-400 pointer-events-none" />
+              </div>
             </div>
 
             <div>
               <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
                 Priority
               </label>
-              <select
-                value={priority}
-                onChange={(e) => setPriority(e.target.value as Priority)}
-                className="w-full px-3 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 text-xs focus:outline-none focus:border-amber-400 cursor-pointer"
-              >
-                {PRIORITIES.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
+              <div className="relative inline-flex items-center w-full">
+                <select
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value as Priority)}
+                  className="appearance-none w-full pl-3 pr-8 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 text-xs focus:outline-none focus:border-amber-400 cursor-pointer"
+                >
+                  {PRIORITIES.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-4 h-4 absolute right-2.5 text-zinc-400 pointer-events-none" />
+              </div>
             </div>
           </div>
 
@@ -363,12 +378,15 @@ export function JobModal({ isOpen, onClose, onDelete, editingJob }: JobModalProp
               <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
                 Date Applied
               </label>
-              <input
-                type="date"
-                value={appliedDate}
-                onChange={(e) => setAppliedDate(e.target.value)}
-                className="w-full px-3 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 text-xs focus:outline-none focus:border-amber-400 font-mono"
-              />
+              <div className="relative inline-flex items-center w-full">
+                <input
+                  type="date"
+                  value={appliedDate}
+                  onChange={(e) => setAppliedDate(e.target.value)}
+                  className="appearance-none w-full pl-3 pr-8 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 text-xs focus:outline-none focus:border-amber-400 font-mono [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                />
+                <Calendar className="w-4 h-4 absolute right-2.5 text-zinc-400 pointer-events-none" />
+              </div>
             </div>
           </div>
 
@@ -392,17 +410,20 @@ export function JobModal({ isOpen, onClose, onDelete, editingJob }: JobModalProp
                 onChange={(e) => setSalaryMax(e.target.value)}
                 className="w-full px-3 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 text-xs focus:outline-none focus:border-amber-400 font-mono"
               />
-              <select
-                value={salaryCurrency}
-                onChange={(e) => setSalaryCurrency(e.target.value)}
-                className="w-full px-3 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 text-xs focus:outline-none focus:border-amber-400 cursor-pointer"
-              >
-                <option value="USD">USD ($)</option>
-                <option value="EUR">EUR (€)</option>
-                <option value="GBP">GBP (£)</option>
-                <option value="INR">INR (₹)</option>
-                <option value="CAD">CAD ($)</option>
-              </select>
+              <div className="relative inline-flex items-center w-full">
+                <select
+                  value={salaryCurrency}
+                  onChange={(e) => setSalaryCurrency(e.target.value)}
+                  className="appearance-none w-full pl-3 pr-8 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 text-xs focus:outline-none focus:border-amber-400 cursor-pointer"
+                >
+                  <option value="USD">USD ($)</option>
+                  <option value="EUR">EUR (€)</option>
+                  <option value="GBP">GBP (£)</option>
+                  <option value="INR">INR (₹)</option>
+                  <option value="CAD">CAD ($)</option>
+                </select>
+                <ChevronDown className="w-4 h-4 absolute right-2.5 text-zinc-400 pointer-events-none" />
+              </div>
             </div>
           </div>
 
