@@ -20,6 +20,8 @@ import {
   Upload,
   Loader2,
   Download,
+  ChevronDown,
+  Calendar,
 } from "lucide-react";
 import confetti from "canvas-confetti";
 
@@ -264,15 +266,18 @@ export function JobDetailPanel({ job: jobProp, onClose }: JobDetailPanelProps) {
 
               {/* Company Type */}
               <PropertyRow label="Company Type">
-                <select
-                  value={job.companyType}
-                  onChange={(e) => save("companyType", e.target.value as CompanyType)}
-                  className="bg-transparent text-zinc-800 dark:text-zinc-200 text-xs focus:outline-none cursor-pointer"
-                >
-                  {(["Big Tech", "Startup", "Scaleup", "Mid-size", "Other"] as CompanyType[]).map((t) => (
-                    <option key={t} value={t} className="bg-white dark:bg-zinc-900">{t}</option>
-                  ))}
-                </select>
+                <div className="relative inline-flex items-center">
+                  <select
+                    value={job.companyType}
+                    onChange={(e) => save("companyType", e.target.value as CompanyType)}
+                    className="appearance-none bg-transparent text-zinc-800 dark:text-zinc-200 text-xs focus:outline-none cursor-pointer pr-5"
+                  >
+                    {(["Big Tech", "Startup", "Scaleup", "Mid-size", "Other"] as CompanyType[]).map((t) => (
+                      <option key={t} value={t} className="bg-white dark:bg-zinc-900">{t}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-3 h-3 absolute right-0.5 text-zinc-400 pointer-events-none" />
+                </div>
               </PropertyRow>
 
               {/* Workplace */}
@@ -307,12 +312,15 @@ export function JobDetailPanel({ job: jobProp, onClose }: JobDetailPanelProps) {
 
               {/* Applied Date */}
               <PropertyRow label="Date Applied">
-                <input
-                  type="date"
-                  defaultValue={job.appliedDate}
-                  onChange={(e) => save("appliedDate", e.target.value)}
-                  className="bg-transparent text-zinc-800 dark:text-zinc-200 font-mono text-xs focus:outline-none"
-                />
+                <div className="relative inline-flex items-center">
+                  <input
+                    type="date"
+                    defaultValue={job.appliedDate}
+                    onChange={(e) => save("appliedDate", e.target.value)}
+                    className="appearance-none bg-transparent text-zinc-800 dark:text-zinc-200 font-mono text-xs focus:outline-none pr-6 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                  />
+                  <Calendar className="w-3.5 h-3.5 absolute right-0 text-zinc-400 pointer-events-none" />
+                </div>
               </PropertyRow>
 
               {/* Salary */}
@@ -333,15 +341,18 @@ export function JobDetailPanel({ job: jobProp, onClose }: JobDetailPanelProps) {
                     placeholder="Max"
                     className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white rounded px-1.5 py-0.5 w-20 focus:outline-none focus:border-amber-400"
                   />
-                  <select
-                    value={job.salaryCurrency}
-                    onChange={(e) => save("salaryCurrency", e.target.value)}
-                    className="bg-transparent text-zinc-800 dark:text-zinc-200 text-xs focus:outline-none cursor-pointer"
-                  >
-                    {["USD", "EUR", "GBP", "INR", "CAD"].map((c) => (
-                      <option key={c} value={c} className="bg-white dark:bg-zinc-900">{c}</option>
-                    ))}
-                  </select>
+                  <div className="relative inline-flex items-center">
+                    <select
+                      value={job.salaryCurrency}
+                      onChange={(e) => save("salaryCurrency", e.target.value)}
+                      className="appearance-none bg-transparent text-zinc-800 dark:text-zinc-200 text-xs focus:outline-none cursor-pointer pr-5"
+                    >
+                      {["USD", "EUR", "GBP", "INR", "CAD"].map((c) => (
+                        <option key={c} value={c} className="bg-white dark:bg-zinc-900">{c}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-3 h-3 absolute right-0.5 text-zinc-400 pointer-events-none" />
+                  </div>
                 </div>
               </PropertyRow>
 

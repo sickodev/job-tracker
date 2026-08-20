@@ -14,7 +14,6 @@ import {
   ArrowUpDown,
   Download,
   Trash2,
-  Edit,
   Copy,
   ExternalLink,
   CheckSquare,
@@ -82,7 +81,6 @@ interface JobTableRowProps {
   onStatusChange: (id: string, newStatus: JobStatus) => void;
   onOpenDetail: (job: JobApplication) => void;
   onDuplicate: (id: string) => void;
-  onEdit: (job: JobApplication) => void;
   onDelete: (job: JobApplication) => void;
 }
 
@@ -95,7 +93,6 @@ const JobTableRow = React.memo(function JobTableRow({
   onStatusChange,
   onOpenDetail,
   onDuplicate,
-  onEdit,
   onDelete,
 }: JobTableRowProps) {
   const statusInfo = STATUS_CONFIG[job.status] || STATUS_CONFIG.Applied;
@@ -261,13 +258,6 @@ const JobTableRow = React.memo(function JobTableRow({
               <Copy className="w-3.5 h-3.5" />
             </button>
             <button
-              onClick={() => onEdit(job)}
-              className="p-1 rounded-md text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-              title="Edit application"
-            >
-              <Edit className="w-3.5 h-3.5" />
-            </button>
-            <button
               onClick={() => onDelete(job)}
               className="p-1 rounded-md text-zinc-400 hover:text-rose-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
               title="Delete application"
@@ -361,10 +351,6 @@ export function TableView() {
     [duplicateJob]
   );
 
-  const handleEditJob = useCallback((job: JobApplication) => {
-    setEditingJob(job);
-    setIsJobModalOpen(true);
-  }, []);
 
   const handleDeleteJob = useCallback((job: JobApplication) => {
     setDeleteTargetJobs([job]);
@@ -391,80 +377,92 @@ export function TableView() {
           </div>
 
           {/* Stage Filter */}
-          <select
-            value={filterOptions.status}
-            onChange={(e) =>
-              setFilterOptions((prev) => ({
-                ...prev,
-                status: e.target.value as JobStatus | "All",
-              }))
-            }
-            className="px-2.5 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 text-xs focus:outline-none focus:border-amber-400 cursor-pointer"
-          >
-            <option value="All">All Stages</option>
-            {Object.keys(STATUS_CONFIG).map((st) => (
-              <option key={st} value={st}>
-                {st}
-              </option>
-            ))}
-          </select>
+          <div className="relative inline-flex items-center">
+            <select
+              value={filterOptions.status}
+              onChange={(e) =>
+                setFilterOptions((prev) => ({
+                  ...prev,
+                  status: e.target.value as JobStatus | "All",
+                }))
+              }
+              className="appearance-none pl-2.5 pr-8 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 text-xs focus:outline-none focus:border-amber-400 cursor-pointer"
+            >
+              <option value="All">All Stages</option>
+              {Object.keys(STATUS_CONFIG).map((st) => (
+                <option key={st} value={st}>
+                  {st}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 absolute right-2 text-zinc-400 pointer-events-none" />
+          </div>
 
           {/* Company Type Filter */}
-          <select
-            value={filterOptions.companyType}
-            onChange={(e) =>
-              setFilterOptions((prev) => ({
-                ...prev,
-                companyType: e.target.value as CompanyType | "All",
-              }))
-            }
-            className="px-2.5 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 text-xs focus:outline-none focus:border-amber-400 cursor-pointer"
-          >
-            <option value="All">All Types</option>
-            <option value="Big Tech">Big Tech</option>
-            <option value="Startup">Startup</option>
-            <option value="Scaleup">Scaleup</option>
-            <option value="Mid-size">Mid-size</option>
-          </select>
+          <div className="relative inline-flex items-center">
+            <select
+              value={filterOptions.companyType}
+              onChange={(e) =>
+                setFilterOptions((prev) => ({
+                  ...prev,
+                  companyType: e.target.value as CompanyType | "All",
+                }))
+              }
+              className="appearance-none pl-2.5 pr-8 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 text-xs focus:outline-none focus:border-amber-400 cursor-pointer"
+            >
+              <option value="All">All Types</option>
+              <option value="Big Tech">Big Tech</option>
+              <option value="Startup">Startup</option>
+              <option value="Scaleup">Scaleup</option>
+              <option value="Mid-size">Mid-size</option>
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 absolute right-2 text-zinc-400 pointer-events-none" />
+          </div>
 
           {/* Workplace Filter */}
-          <select
-            value={filterOptions.workplaceType}
-            onChange={(e) =>
-              setFilterOptions((prev) => ({
-                ...prev,
-                workplaceType: e.target.value as WorkplaceType | "All",
-              }))
-            }
-            className="px-2.5 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 text-xs focus:outline-none focus:border-amber-400 cursor-pointer"
-          >
-            <option value="All">All Workplaces</option>
-            <option value="Remote">Remote</option>
-            <option value="Hybrid">Hybrid</option>
-            <option value="On-site">On-site</option>
-          </select>
+          <div className="relative inline-flex items-center">
+            <select
+              value={filterOptions.workplaceType}
+              onChange={(e) =>
+                setFilterOptions((prev) => ({
+                  ...prev,
+                  workplaceType: e.target.value as WorkplaceType | "All",
+                }))
+              }
+              className="appearance-none pl-2.5 pr-8 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 text-xs focus:outline-none focus:border-amber-400 cursor-pointer"
+            >
+              <option value="All">All Workplaces</option>
+              <option value="Remote">Remote</option>
+              <option value="Hybrid">Hybrid</option>
+              <option value="On-site">On-site</option>
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 absolute right-2 text-zinc-400 pointer-events-none" />
+          </div>
 
           {/* Sort By */}
           <div className="flex items-center gap-1 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-2 py-1">
             <ArrowUpDown className="w-3 h-3 text-zinc-400" />
-            <select
-              value={`${filterOptions.sortBy}_${filterOptions.sortOrder}`}
-              onChange={(e) => {
-                const [sortBy, sortOrder] = e.target.value.split("_");
-                setFilterOptions((prev) => ({
-                  ...prev,
-                  sortBy: sortBy as any,
-                  sortOrder: sortOrder as "asc" | "desc",
-                }));
-              }}
-              className="bg-transparent text-zinc-700 dark:text-zinc-200 text-xs focus:outline-none border-none pr-1 cursor-pointer"
-            >
-              <option value="appliedDate_desc" className="bg-white dark:bg-zinc-900">Date Applied (Newest)</option>
-              <option value="appliedDate_asc" className="bg-white dark:bg-zinc-900">Date Applied (Oldest)</option>
-              <option value="salaryMax_desc" className="bg-white dark:bg-zinc-900">Highest Salary</option>
-              <option value="rating_desc" className="bg-white dark:bg-zinc-900">Highest Rating</option>
-              <option value="company_asc" className="bg-white dark:bg-zinc-900">Company (A-Z)</option>
-            </select>
+            <div className="relative inline-flex items-center">
+              <select
+                value={`${filterOptions.sortBy}_${filterOptions.sortOrder}`}
+                onChange={(e) => {
+                  const [sortBy, sortOrder] = e.target.value.split("_");
+                  setFilterOptions((prev) => ({
+                    ...prev,
+                    sortBy: sortBy as any,
+                    sortOrder: sortOrder as "asc" | "desc",
+                  }));
+                }}
+                className="appearance-none bg-transparent text-zinc-700 dark:text-zinc-200 text-xs focus:outline-none border-none pr-5 cursor-pointer"
+              >
+                <option value="appliedDate_desc" className="bg-white dark:bg-zinc-900">Date Applied (Newest)</option>
+                <option value="appliedDate_asc" className="bg-white dark:bg-zinc-900">Date Applied (Oldest)</option>
+                <option value="salaryMax_desc" className="bg-white dark:bg-zinc-900">Highest Salary</option>
+                <option value="rating_desc" className="bg-white dark:bg-zinc-900">Highest Rating</option>
+                <option value="company_asc" className="bg-white dark:bg-zinc-900">Company (A-Z)</option>
+              </select>
+              <ChevronDown className="w-3 h-3 absolute right-0.5 text-zinc-400 pointer-events-none" />
+            </div>
           </div>
 
           {(filterOptions.search ||
@@ -589,7 +587,6 @@ export function TableView() {
                     onStatusChange={handleStatusChange}
                     onOpenDetail={handleOpenDetail}
                     onDuplicate={handleDuplicate}
-                    onEdit={handleEditJob}
                     onDelete={handleDeleteJob}
                   />
                 ))
