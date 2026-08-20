@@ -143,11 +143,40 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const storagePrefix = user?.username ? `job_tracker_${user.username}_` : "job_tracker_default_";
 
-  const [sheets, setSheets] = useState<Sheet[]>(INITIAL_SHEETS);
-  const [activeSheetId, setActiveSheetId] = useState<string>(INITIAL_SHEETS[0]?.id || "sheet-applications");
-  const [allJobs, setAllJobs] = useState<JobApplication[]>(INITIAL_JOBS);
+  const [sheets, setSheets] = useState<Sheet[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem(`${storagePrefix}sheets`);
+        if (stored) return JSON.parse(stored);
+      } catch (e) {}
+    }
+    return INITIAL_SHEETS;
+  });
+  const [activeSheetId, setActiveSheetId] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const storedActive = localStorage.getItem(`${storagePrefix}active_sheet`);
+        if (storedActive) return storedActive;
+      } catch (e) {}
+    }
+    return INITIAL_SHEETS[0]?.id || "sheet-applications";
+  });
+  const [allJobs, setAllJobs] = useState<JobApplication[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem(`${storagePrefix}jobs`);
+        if (stored) return JSON.parse(stored);
+      } catch (e) {}
+    }
+    return INITIAL_JOBS;
+  });
   const [filterOptions, setFilterOptions] = useState<FilterOptions>(defaultFilterOptions);
-  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [isLoadingData, setIsLoadingData] = useState(() => {
+    if (typeof window !== "undefined" && isSupabaseConfigured() && user?.id && user.id !== "local-admin-id") {
+      return true; // Keep loading for supabase
+    }
+    return false;
+  });
 
   const isDemoUser = Boolean(user?.id === "demo-user-id" || user?.role === "DEMO");
   const isSupabaseReady = Boolean(isSupabaseConfigured() && user?.id && !isDemoUser && user.id !== "local-admin-id");
