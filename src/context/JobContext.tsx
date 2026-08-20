@@ -381,57 +381,54 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
   }, [allJobs, activeSheetId]);
 
   const filteredJobs = useMemo(() => {
-    return activeSheetJobs
-      .filter((job) => {
-        if (filterOptions.search.trim()) {
-          const q = filterOptions.search.toLowerCase();
-          const matchCompany = job.company.toLowerCase().includes(q);
-          const matchRole = job.role.toLowerCase().includes(q);
-          const matchLocation = job.location.toLowerCase().includes(q);
-          const matchNotes = job.notes?.toLowerCase().includes(q) || false;
-          const matchContact = job.contact?.toLowerCase().includes(q) || false;
-          if (!matchCompany && !matchRole && !matchLocation && !matchNotes && !matchContact) {
-            return false;
-          }
-        }
+    const q = filterOptions.search.trim().toLowerCase();
+    const { status, companyType, workplaceType, priority, sortBy, sortOrder } = filterOptions;
 
-        if (filterOptions.status !== "All" && job.status !== filterOptions.status) {
-          return false;
-        }
+    const filtered = activeSheetJobs.filter((job) => {
+      if (status !== "All" && job.status !== status) return false;
+      if (companyType !== "All" && job.companyType !== companyType) return false;
+      if (workplaceType !== "All" && job.workplaceType !== workplaceType) return false;
+      if (priority !== "All" && job.priority !== priority) return false;
 
-        if (filterOptions.companyType !== "All" && job.companyType !== filterOptions.companyType) {
-          return false;
-        }
+      if (q) {
+        const matchCompany = job.company.toLowerCase().includes(q);
+        if (matchCompany) return true;
+        const matchRole = job.role.toLowerCase().includes(q);
+        if (matchRole) return true;
+        const matchLocation = job.location.toLowerCase().includes(q);
+        if (matchLocation) return true;
+        const matchNotes = job.notes ? job.notes.toLowerCase().includes(q) : false;
+        if (matchNotes) return true;
+        const matchContact = job.contact ? job.contact.toLowerCase().includes(q) : false;
+        if (matchContact) return true;
+        return false;
+      }
 
-        if (filterOptions.workplaceType !== "All" && job.workplaceType !== filterOptions.workplaceType) {
-          return false;
-        }
+      return true;
+    });
 
-        if (filterOptions.priority !== "All" && job.priority !== filterOptions.priority) {
-          return false;
+    const orderMultiplier = sortOrder === "asc" ? 1 : -1;
+    return filtered.sort((a, b) => {
+      switch (sortBy) {
+        case "appliedDate": {
+          const timeA = a.appliedDate ? new Date(a.appliedDate).getTime() : 0;
+          const timeB = b.appliedDate ? new Date(b.appliedDate).getTime() : 0;
+          return (timeA - timeB) * orderMultiplier;
         }
-
-        return true;
-      })
-      .sort((a, b) => {
-        const orderMultiplier = filterOptions.sortOrder === "asc" ? 1 : -1;
-        switch (filterOptions.sortBy) {
-          case "appliedDate":
-            return (new Date(a.appliedDate).getTime() - new Date(b.appliedDate).getTime()) * orderMultiplier;
-          case "company":
-            return a.company.localeCompare(b.company) * orderMultiplier;
-          case "role":
-            return a.role.localeCompare(b.role) * orderMultiplier;
-          case "salaryMax":
-            return ((a.salaryMax || 0) - (b.salaryMax || 0)) * orderMultiplier;
-          case "rating":
-            return ((a.rating || 0) - (b.rating || 0)) * orderMultiplier;
-          case "status":
-            return a.status.localeCompare(b.status) * orderMultiplier;
-          default:
-            return 0;
-        }
-      });
+        case "company":
+          return a.company.localeCompare(b.company) * orderMultiplier;
+        case "role":
+          return a.role.localeCompare(b.role) * orderMultiplier;
+        case "salaryMax":
+          return ((a.salaryMax || 0) - (b.salaryMax || 0)) * orderMultiplier;
+        case "rating":
+          return ((a.rating || 0) - (b.rating || 0)) * orderMultiplier;
+        case "status":
+          return a.status.localeCompare(b.status) * orderMultiplier;
+        default:
+          return 0;
+      }
+    });
   }, [activeSheetJobs, filterOptions]);
 
   const addJob = useCallback(

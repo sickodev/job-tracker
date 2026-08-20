@@ -34,7 +34,7 @@ const SIZE_CONFIG = {
   },
 };
 
-export function CompanyAvatar({
+function CompanyAvatarComponent({
   company,
   companyUrl,
   jobUrl,
@@ -91,3 +91,5 @@ export function CompanyAvatar({
     </div>
   );
 }
+
+export const CompanyAvatar = React.memo(CompanyAvatarComponent);
