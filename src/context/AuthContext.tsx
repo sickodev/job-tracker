@@ -39,8 +39,27 @@ function formatAuthEmail(input: string): string {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<UserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<UserProfile | null>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem(AUTH_STORAGE_KEY);
+        if (stored) return JSON.parse(stored);
+      } catch (e) {}
+    }
+    return null;
+  });
+  const [isLoading, setIsLoading] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem(AUTH_STORAGE_KEY);
+        if (stored) return false; // Instantly load if user is cached
+      } catch (e) {}
+      
+      const supabase = getSupabase();
+      if (supabase) return true; // Keep loading for supabase to verify session if no cached user
+    }
+    return false;
+  });
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
   const [recoveryEmail, setRecoveryEmail] = useState("");
   const isSupabaseEnabled = isSupabaseConfigured();
