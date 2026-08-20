@@ -168,9 +168,24 @@ export function Navbar({ currentView, onViewChange }: NavbarProps) {
                       {initials}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-zinc-900 dark:text-zinc-100 truncate">
-                        {user?.name || user?.username}
-                      </p>
+                      <div className="flex items-center gap-1.5 justify-between">
+                        <p className="font-medium text-zinc-900 dark:text-zinc-100 truncate">
+                          {user?.name || user?.username}
+                        </p>
+                        {user?.role && (
+                          <span
+                            className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-semibold uppercase tracking-wider shrink-0 ${
+                              user.role === "ADMIN"
+                                ? "bg-amber-400/20 text-amber-600 dark:text-amber-400 border border-amber-400/30"
+                                : user.role === "DEMO"
+                                ? "bg-sky-400/20 text-sky-600 dark:text-sky-400 border border-sky-400/30"
+                                : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700"
+                            }`}
+                          >
+                            {user.role}
+                          </span>
+                        )}
+                      </div>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <span className={`w-1.5 h-1.5 rounded-full ${isSupabaseEnabled ? "bg-emerald-500" : "bg-zinc-400"}`} />
                         <span className="text-[10px] text-zinc-400 font-mono">

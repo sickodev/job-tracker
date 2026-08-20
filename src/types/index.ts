@@ -48,6 +48,8 @@ export interface Sheet {
   createdAt: string;
 }
 
+export type UserRole = "ADMIN" | "USER" | "DEMO";
+
 export interface UserProfile {
   id?: string;
   email?: string;
@@ -55,6 +57,7 @@ export interface UserProfile {
   name?: string;
   title?: string;
   avatarUrl?: string;
+  role?: UserRole;
 }
 
 export interface FilterOptions {

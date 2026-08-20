@@ -84,6 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               name: meta.name || username,
               title: meta.title || "Tech Professional",
               avatarUrl: meta.avatar_url,
+              role: meta.role || (username === "admin" ? "ADMIN" : username === "alex_tech" ? "DEMO" : "USER"),
             });
             setIsLoading(false);
             return;
@@ -127,6 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             name: meta.name || username,
             title: meta.title || "Tech Professional",
             avatarUrl: meta.avatar_url,
+            role: meta.role || (username === "admin" ? "ADMIN" : username === "alex_tech" ? "DEMO" : "USER"),
           });
         }
       });
@@ -155,6 +157,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         username: "admin",
         name: "Lead Job Seeker",
         title: "Senior Full Stack Engineer",
+        role: "ADMIN",
       };
       setUser(profile);
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(profile));
@@ -173,6 +176,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             username: found.username,
             name: found.name || found.username,
             title: found.title || "Software Engineer",
+            role: found.role || (found.username === "admin" ? "ADMIN" : "USER"),
           };
           setUser(profile);
           localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(profile));
@@ -206,6 +210,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             username,
             name: meta.name || username,
             title: meta.title || "Tech Professional",
+            role: meta.role || (username === "admin" ? "ADMIN" : username === "alex_tech" ? "DEMO" : "USER"),
           };
           setUser(profile);
           try {
@@ -224,6 +229,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               username: cleanUsername,
               name: cleanUsername,
               title: "Software Engineer",
+              role: lowerUsername === "admin" ? "ADMIN" : "USER",
             };
             setUser(profile);
             try {
@@ -276,6 +282,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           username: newUserData.username,
           name: newUserData.name,
           title: newUserData.title,
+          role: "USER",
         };
         setUser(profile);
         localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(profile));
@@ -353,6 +360,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             username,
             name: displayName,
             title: "Software Engineer",
+            role: "USER",
           };
           setUser(profile);
           try {
@@ -378,6 +386,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         password: password.trim(),
         name: displayName,
         title: "Software Engineer",
+        role: "USER",
       };
 
       const profile: UserProfile = {
@@ -385,6 +394,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         username: newUserData.username,
         name: newUserData.name,
         title: newUserData.title,
+        role: "USER",
       };
 
       setUser(profile);
@@ -567,11 +577,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       username: "alex_tech",
       name: "Alex Rivera",
       title: "Senior Product & Full-Stack Engineer",
+      role: "DEMO",
     };
     setUser(demoProfile);
     setIsPasswordRecovery(false);
     try {
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(demoProfile));
+      localStorage.removeItem("job_tracker_alex_tech_sheets");
+      localStorage.removeItem("job_tracker_alex_tech_jobs");
+      localStorage.removeItem("job_tracker_alex_tech_active_sheet");
     } catch (e) {
       console.error(e);
     }

@@ -149,11 +149,21 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
   const [filterOptions, setFilterOptions] = useState<FilterOptions>(defaultFilterOptions);
   const [isLoadingData, setIsLoadingData] = useState(true);
 
-  const isSupabaseReady = Boolean(isSupabaseConfigured() && user?.id && user.id !== "demo-user-id" && user.id !== "local-admin-id");
+  const isDemoUser = Boolean(user?.id === "demo-user-id" || user?.role === "DEMO");
+  const isSupabaseReady = Boolean(isSupabaseConfigured() && user?.id && !isDemoUser && user.id !== "local-admin-id");
 
-  // Load data: From Supabase if logged in, otherwise from localStorage
+  // Load data: From saved demo data if demo user, from Supabase if logged in, otherwise from localStorage
   const loadData = useCallback(async () => {
     setIsLoadingData(true);
+
+    if (isDemoUser) {
+      setSheets(INITIAL_SHEETS);
+      setAllJobs(INITIAL_JOBS);
+      setActiveSheetId(INITIAL_SHEETS[0]?.id || "sheet-applications");
+      setIsLoadingData(false);
+      return;
+    }
+
     const supabase = getSupabase();
 
     if (isSupabaseReady && supabase && user?.id) {
@@ -225,7 +235,7 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // LocalStorage Fallback (Demo / Offline mode)
+    // LocalStorage Fallback (Offline / standard local mode)
     try {
       const storedSheets = localStorage.getItem(`${storagePrefix}sheets`);
       const storedJobs = localStorage.getItem(`${storagePrefix}jobs`);
@@ -256,15 +266,15 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoadingData(false);
     }
-  }, [isSupabaseReady, user?.id, storagePrefix]);
+  }, [isDemoUser, isSupabaseReady, user?.id, storagePrefix]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  // Persist to localStorage whenever in local/demo mode
+  // Persist to localStorage whenever in local mode (not demo or supabase)
   useEffect(() => {
-    if (!isSupabaseReady && !isLoadingData) {
+    if (!isSupabaseReady && !isDemoUser && !isLoadingData) {
       try {
         localStorage.setItem(`${storagePrefix}sheets`, JSON.stringify(sheets));
         localStorage.setItem(`${storagePrefix}jobs`, JSON.stringify(allJobs));
@@ -273,7 +283,7 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
         console.error("Failed to save to localStorage:", e);
       }
     }
-  }, [sheets, allJobs, activeSheetId, storagePrefix, isSupabaseReady, isLoadingData]);
+  }, [sheets, allJobs, activeSheetId, storagePrefix, isSupabaseReady, isDemoUser, isLoadingData]);
 
   const activeSheet = useMemo(() => {
     return sheets.find((s) => s.id === activeSheetId) || sheets[0];
