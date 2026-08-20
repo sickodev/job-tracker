@@ -48,11 +48,19 @@ export function getCompanyColor(company: string): string {
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
+const domainCache = new Map<string, string>();
+const logoCache = new Map<string, string>();
+
 export function getCompanyDomain(
   company: string,
   companyUrl?: string,
   jobUrl?: string
 ): string {
+  const cacheKey = `${company || ""}|${companyUrl || ""}|${jobUrl || ""}`;
+  const cached = domainCache.get(cacheKey);
+  if (cached !== undefined) return cached;
+
+  let domain = "";
   const urlToParse = companyUrl?.trim() || jobUrl?.trim();
   if (urlToParse) {
     try {
@@ -65,27 +73,28 @@ export function getCompanyDomain(
       if (host.startsWith("www.")) {
         host = host.slice(4);
       }
-      if (host) return host;
+      if (host) domain = host;
     } catch {
       // Fallback regex parsing if URL object fails
       const match = urlToParse.replace(/^https?:\/\//i, "").split(/[\/?#]/)[0].replace(/^www\./i, "");
-      if (match) return match.toLowerCase();
+      if (match) domain = match.toLowerCase();
     }
   }
 
   // Fallback to sanitizing company name
-  if (company) {
+  if (!domain && company) {
     const clean = company
       .toLowerCase()
       .trim()
       .replace(/\s+(inc|llc|corp|ltd|co|technologies|tech|ai|labs)\b/gi, "")
       .replace(/[^a-z0-9]/g, "");
     if (clean) {
-      return `${clean}.com`;
+      domain = `${clean}.com`;
     }
   }
 
-  return "";
+  domainCache.set(cacheKey, domain);
+  return domain;
 }
 
 export function getCompanyLogoUrl(
@@ -93,9 +102,16 @@ export function getCompanyLogoUrl(
   companyUrl?: string,
   jobUrl?: string
 ): string {
+  const cacheKey = `${company || ""}|${companyUrl || ""}|${jobUrl || ""}`;
+  const cached = logoCache.get(cacheKey);
+  if (cached !== undefined) return cached;
+
   const domain = getCompanyDomain(company, companyUrl, jobUrl);
-  if (!domain) return "";
-  return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+  const logoUrl = domain
+    ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`
+    : "";
+  logoCache.set(cacheKey, logoUrl);
+  return logoUrl;
 }
 
 export interface PasswordRule {

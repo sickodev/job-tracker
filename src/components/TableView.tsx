@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useJobs } from "@/context/JobContext";
 import { JobApplication, JobStatus, CompanyType, WorkplaceType } from "@/types";
 import { JobModal } from "./JobModal";
@@ -73,6 +73,230 @@ const STATUS_CONFIG: Record<
   },
 };
 
+interface JobTableRowProps {
+  job: JobApplication;
+  isSelected: boolean;
+  isNotesExpanded: boolean;
+  onToggleSelect: (id: string) => void;
+  onToggleNotes: (id: string) => void;
+  onStatusChange: (id: string, newStatus: JobStatus) => void;
+  onOpenDetail: (job: JobApplication) => void;
+  onDuplicate: (id: string) => void;
+  onEdit: (job: JobApplication) => void;
+  onDelete: (job: JobApplication) => void;
+}
+
+const JobTableRow = React.memo(function JobTableRow({
+  job,
+  isSelected,
+  isNotesExpanded,
+  onToggleSelect,
+  onToggleNotes,
+  onStatusChange,
+  onOpenDetail,
+  onDuplicate,
+  onEdit,
+  onDelete,
+}: JobTableRowProps) {
+  const statusInfo = STATUS_CONFIG[job.status] || STATUS_CONFIG.Applied;
+
+  return (
+    <React.Fragment>
+      <tr
+        className={`group transition-colors ${
+          isSelected
+            ? "bg-amber-50/50 dark:bg-amber-950/20"
+            : "hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40"
+        }`}
+      >
+        {/* Checkbox */}
+        <td className="py-2.5 px-3">
+          <button
+            onClick={() => onToggleSelect(job.id)}
+            className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 cursor-pointer"
+          >
+            {isSelected ? (
+              <CheckSquare className="w-3.5 h-3.5 text-amber-500" />
+            ) : (
+              <Square className="w-3.5 h-3.5" />
+            )}
+          </button>
+        </td>
+
+        {/* Company */}
+        <td className="py-2.5 px-3">
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => onOpenDetail(job)}
+              className="hover:opacity-80 transition-opacity cursor-pointer shrink-0"
+              title="Open detail panel"
+            >
+              <CompanyAvatar
+                company={job.company}
+                companyUrl={job.companyUrl}
+                jobUrl={job.jobUrl}
+                size="md"
+              />
+            </button>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => onOpenDetail(job)}
+                  className="font-medium text-zinc-900 dark:text-zinc-100 text-xs hover:text-amber-500 transition-colors text-left cursor-pointer"
+                >
+                  {job.company}
+                </button>
+                {job.companyUrl && (
+                  <a
+                    href={job.companyUrl.startsWith("http") ? job.companyUrl : `https://${job.companyUrl}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-zinc-400 hover:text-amber-500 transition-colors"
+                    title="Open Company Website"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Globe className="w-3 h-3" />
+                  </a>
+                )}
+                {job.jobUrl && (
+                  <a
+                    href={job.jobUrl.startsWith("http") ? job.jobUrl : `https://${job.jobUrl}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-zinc-400 hover:text-amber-500 transition-colors"
+                    title="Open Job URL"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
+              </div>
+              {job.location && (
+                <span className="text-[11px] text-zinc-500 truncate max-w-[140px]">
+                  {job.location}
+                </span>
+              )}
+            </div>
+          </div>
+        </td>
+
+        {/* Role */}
+        <td className="py-2.5 px-3">
+          <div className="flex flex-col">
+            <div className="flex items-center gap-1.5">
+              <span className="font-normal text-zinc-800 dark:text-zinc-200">{job.role}</span>
+              {job.resumeUrl && (
+                <a
+                  href={job.resumeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 text-[10px] font-medium border border-amber-200/60 dark:border-amber-700/50 hover:bg-amber-100 transition-colors"
+                  title="View attached resume"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <FileText className="w-2.5 h-2.5" />
+                  <span>CV</span>
+                </a>
+              )}
+            </div>
+            {job.notes && (
+              <button
+                onClick={() => onToggleNotes(job.id)}
+                className="text-[11px] text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 text-left truncate max-w-[220px] transition-colors cursor-pointer"
+              >
+                {job.notes}
+              </button>
+            )}
+          </div>
+        </td>
+
+        {/* Stage / Status */}
+        <td className="py-2.5 px-3">
+          <div className="relative inline-flex items-center">
+            <span className={`w-2 h-2 rounded-full ${statusInfo.dot} absolute left-2 pointer-events-none`} />
+            <select
+              value={job.status}
+              onChange={(e) => onStatusChange(job.id, e.target.value as JobStatus)}
+              className="appearance-none cursor-pointer pl-6 pr-5 py-1 rounded-md bg-zinc-100/80 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-800 dark:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-600 focus:outline-none focus:border-amber-400 transition-colors font-medium"
+            >
+              {Object.keys(STATUS_CONFIG).map((st) => (
+                <option key={st} value={st} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">
+                  {st === "Offer" ? "🎉 " : ""}{st}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="w-3 h-3 absolute right-1.5 text-zinc-400 pointer-events-none" />
+          </div>
+        </td>
+
+        {/* Compensation */}
+        <td className="py-2.5 px-3">
+          <div className="text-zinc-700 dark:text-zinc-300 font-mono text-xs">
+            {job.salaryMax ? (
+              <span>
+                {job.salaryMin
+                  ? `${formatCurrency(job.salaryMin, job.salaryCurrency)} - `
+                  : "Up to "}
+                {formatCurrency(job.salaryMax, job.salaryCurrency)}
+              </span>
+            ) : (
+              <span className="text-zinc-400 dark:text-zinc-600">—</span>
+            )}
+          </div>
+        </td>
+
+        {/* Applied Date */}
+        <td className="py-2.5 px-3 text-zinc-500 dark:text-zinc-400 font-mono text-xs">
+          {formatDate(job.appliedDate)}
+        </td>
+
+        {/* Actions */}
+        <td className="py-2.5 px-3 text-right">
+          <div className="flex items-center justify-end gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={() => onDuplicate(job.id)}
+              className="p-1 rounded-md text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              title="Duplicate job"
+            >
+              <Copy className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => onEdit(job)}
+              className="p-1 rounded-md text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              title="Edit application"
+            >
+              <Edit className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => onDelete(job)}
+              className="p-1 rounded-md text-zinc-400 hover:text-rose-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              title="Delete application"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </td>
+      </tr>
+
+      {/* Expanded Notes Row */}
+      {isNotesExpanded && (
+        <tr className="bg-zinc-50/70 dark:bg-zinc-950/80 border-t border-b border-zinc-200 dark:border-zinc-800">
+          <td colSpan={7} className="py-2.5 px-6 text-xs text-zinc-700 dark:text-zinc-300">
+            <div className="flex items-start gap-2 max-w-3xl">
+              <span className="font-medium text-zinc-400 min-w-max">
+                Notes:
+              </span>
+              <p className="text-zinc-600 dark:text-zinc-300 leading-relaxed font-normal">
+                {job.notes}
+              </p>
+            </div>
+          </td>
+        </tr>
+      )}
+    </React.Fragment>
+  );
+});
+
 export function TableView() {
   const {
     filteredJobs,
@@ -94,30 +318,57 @@ export function TableView() {
   const [detailJob, setDetailJob] = useState<JobApplication | null>(null);
   const [deleteTargetJobs, setDeleteTargetJobs] = useState<JobApplication[] | null>(null);
 
-  const toggleSelectAll = () => {
+  const toggleSelectAll = useCallback(() => {
     if (selectedIds.length === filteredJobs.length) {
       setSelectedIds([]);
     } else {
       setSelectedIds(filteredJobs.map((j) => j.id));
     }
-  };
+  }, [selectedIds.length, filteredJobs]);
 
-  const toggleSelectOne = (id: string) => {
+  const toggleSelectOne = useCallback((id: string) => {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     );
-  };
+  }, []);
 
-  const handleStatusChange = (id: string, newStatus: JobStatus) => {
-    updateJob(id, { status: newStatus });
-    if (newStatus === "Offer") {
-      confetti({
-        particleCount: 100,
-        spread: 80,
-        origin: { y: 0.6 },
-      });
-    }
-  };
+  const handleToggleNotes = useCallback((id: string) => {
+    setExpandedNotesId((prev) => (prev === id ? null : id));
+  }, []);
+
+  const handleStatusChange = useCallback(
+    (id: string, newStatus: JobStatus) => {
+      updateJob(id, { status: newStatus });
+      if (newStatus === "Offer") {
+        confetti({
+          particleCount: 100,
+          spread: 80,
+          origin: { y: 0.6 },
+        });
+      }
+    },
+    [updateJob]
+  );
+
+  const handleOpenDetail = useCallback((job: JobApplication) => {
+    setDetailJob(job);
+  }, []);
+
+  const handleDuplicate = useCallback(
+    (id: string) => {
+      duplicateJob(id);
+    },
+    [duplicateJob]
+  );
+
+  const handleEditJob = useCallback((job: JobApplication) => {
+    setEditingJob(job);
+    setIsJobModalOpen(true);
+  }, []);
+
+  const handleDeleteJob = useCallback((job: JobApplication) => {
+    setDeleteTargetJobs([job]);
+  }, []);
 
   return (
     <div className="flex flex-col flex-1 p-4 sm:p-6 max-w-7xl mx-auto w-full space-y-4">
@@ -327,217 +578,21 @@ export function TableView() {
                   </td>
                 </tr>
               ) : (
-                filteredJobs.map((job) => {
-                  const isSelected = selectedIds.includes(job.id);
-                  const statusInfo = STATUS_CONFIG[job.status] || STATUS_CONFIG.Applied;
-
-                  return (
-                    <React.Fragment key={job.id}>
-                      <tr
-                        className={`group transition-colors ${
-                          isSelected
-                            ? "bg-amber-50/50 dark:bg-amber-950/20"
-                            : "hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40"
-                        }`}
-                      >
-                        {/* Checkbox */}
-                        <td className="py-2.5 px-3">
-                          <button
-                            onClick={() => toggleSelectOne(job.id)}
-                            className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 cursor-pointer"
-                          >
-                            {isSelected ? (
-                              <CheckSquare className="w-3.5 h-3.5 text-amber-500" />
-                            ) : (
-                              <Square className="w-3.5 h-3.5" />
-                            )}
-                          </button>
-                        </td>
-
-                        {/* Company */}
-                        <td className="py-2.5 px-3">
-                          <div className="flex items-center gap-2.5">
-                            <button
-                              onClick={() => setDetailJob(job)}
-                              className="hover:opacity-80 transition-opacity cursor-pointer shrink-0"
-                              title="Open detail panel"
-                            >
-                              <CompanyAvatar
-                                company={job.company}
-                                companyUrl={job.companyUrl}
-                                jobUrl={job.jobUrl}
-                                size="md"
-                              />
-                            </button>
-                            <div className="flex flex-col">
-                              <div className="flex items-center gap-1.5">
-                                <button
-                                  onClick={() => setDetailJob(job)}
-                                  className="font-medium text-zinc-900 dark:text-zinc-100 text-xs hover:text-amber-500 transition-colors text-left cursor-pointer"
-                                >
-                                  {job.company}
-                                </button>
-                                {job.companyUrl && (
-                                  <a
-                                    href={job.companyUrl.startsWith("http") ? job.companyUrl : `https://${job.companyUrl}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-zinc-400 hover:text-amber-500 transition-colors"
-                                    title="Open Company Website"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <Globe className="w-3 h-3" />
-                                  </a>
-                                )}
-                                {job.jobUrl && (
-                                  <a
-                                    href={job.jobUrl.startsWith("http") ? job.jobUrl : `https://${job.jobUrl}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-zinc-400 hover:text-amber-500 transition-colors"
-                                    title="Open Job URL"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <ExternalLink className="w-3 h-3" />
-                                  </a>
-                                )}
-                              </div>
-                              {job.location && (
-                                <span className="text-[11px] text-zinc-500 truncate max-w-[140px]">
-                                  {job.location}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* Role */}
-                        <td className="py-2.5 px-3">
-                          <div className="flex flex-col">
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-normal text-zinc-800 dark:text-zinc-200">{job.role}</span>
-                              {job.resumeUrl && (
-                                <a
-                                  href={job.resumeUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 text-[10px] font-medium border border-amber-200/60 dark:border-amber-700/50 hover:bg-amber-100 transition-colors"
-                                  title="View attached resume"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <FileText className="w-2.5 h-2.5" />
-                                  <span>CV</span>
-                                </a>
-                              )}
-                            </div>
-                            {job.notes && (
-                              <button
-                                onClick={() =>
-                                  setExpandedNotesId(
-                                    expandedNotesId === job.id ? null : job.id
-                                  )
-                                }
-                                className="text-[11px] text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 text-left truncate max-w-[220px] transition-colors cursor-pointer"
-                              >
-                                {job.notes}
-                              </button>
-                            )}
-                          </div>
-                        </td>
-
-                        {/* Stage / Status */}
-                        <td className="py-2.5 px-3">
-                          <div className="relative inline-flex items-center">
-                            <span className={`w-2 h-2 rounded-full ${statusInfo.dot} absolute left-2 pointer-events-none`} />
-                            <select
-                              value={job.status}
-                              onChange={(e) =>
-                                handleStatusChange(job.id, e.target.value as JobStatus)
-                              }
-                              className="appearance-none cursor-pointer pl-6 pr-5 py-1 rounded-md bg-zinc-100/80 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-800 dark:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-600 focus:outline-none focus:border-amber-400 transition-colors font-medium"
-                            >
-                              {Object.keys(STATUS_CONFIG).map((st) => (
-                                <option key={st} value={st} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">
-                                  {st === "Offer" ? "🎉 " : ""}{st}
-                                </option>
-                              ))}
-                            </select>
-                            <ChevronDown className="w-3 h-3 absolute right-1.5 text-zinc-400 pointer-events-none" />
-                          </div>
-                        </td>
-
-                        {/* Compensation */}
-                        <td className="py-2.5 px-3">
-                          <div className="text-zinc-700 dark:text-zinc-300 font-mono text-xs">
-                            {job.salaryMax ? (
-                              <span>
-                                {job.salaryMin
-                                  ? `${formatCurrency(job.salaryMin, job.salaryCurrency)} - `
-                                  : "Up to "}
-                                {formatCurrency(job.salaryMax, job.salaryCurrency)}
-                              </span>
-                            ) : (
-                              <span className="text-zinc-400 dark:text-zinc-600">—</span>
-                            )}
-                          </div>
-                        </td>
-
-                        {/* Applied Date */}
-                        <td className="py-2.5 px-3 text-zinc-500 dark:text-zinc-400 font-mono text-xs">
-                          {formatDate(job.appliedDate)}
-                        </td>
-
-                        {/* Actions */}
-                        <td className="py-2.5 px-3 text-right">
-                          <div className="flex items-center justify-end gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
-                            <button
-                              onClick={() => duplicateJob(job.id)}
-                              className="p-1 rounded-md text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                              title="Duplicate job"
-                            >
-                              <Copy className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                setEditingJob(job);
-                                setIsJobModalOpen(true);
-                              }}
-                              className="p-1 rounded-md text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                              title="Edit application"
-                            >
-                              <Edit className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                setDeleteTargetJobs([job]);
-                              }}
-                              className="p-1 rounded-md text-zinc-400 hover:text-rose-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                              title="Delete application"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-
-                      {/* Expanded Notes Row */}
-                      {expandedNotesId === job.id && (
-                        <tr className="bg-zinc-50/70 dark:bg-zinc-950/80 border-t border-b border-zinc-200 dark:border-zinc-800">
-                          <td colSpan={7} className="py-2.5 px-6 text-xs text-zinc-700 dark:text-zinc-300">
-                            <div className="flex items-start gap-2 max-w-3xl">
-                              <span className="font-medium text-zinc-400 min-w-max">
-                                Notes:
-                              </span>
-                              <p className="text-zinc-600 dark:text-zinc-300 leading-relaxed font-normal">
-                                {job.notes}
-                              </p>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </React.Fragment>
-                  );
-                })
+                filteredJobs.map((job) => (
+                  <JobTableRow
+                    key={job.id}
+                    job={job}
+                    isSelected={selectedIds.includes(job.id)}
+                    isNotesExpanded={expandedNotesId === job.id}
+                    onToggleSelect={toggleSelectOne}
+                    onToggleNotes={handleToggleNotes}
+                    onStatusChange={handleStatusChange}
+                    onOpenDetail={handleOpenDetail}
+                    onDuplicate={handleDuplicate}
+                    onEdit={handleEditJob}
+                    onDelete={handleDeleteJob}
+                  />
+                ))
               )}
             </tbody>
           </table>

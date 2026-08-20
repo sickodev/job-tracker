@@ -1,13 +1,29 @@
 "use client";
 
 import React, { useState } from "react";
+import dynamic from "next/dynamic";
 import { useAuth } from "@/context/AuthContext";
 import { Navbar } from "./Navbar";
 import { SheetTabs } from "./SheetTabs";
 import { TableView } from "./TableView";
-import { ChartsView } from "./ChartsView";
-import { KanbanView } from "./KanbanView";
 import { AuthView } from "./AuthView";
+
+const ViewLoadingFallback = () => (
+  <div className="flex-1 flex items-center justify-center p-12 text-zinc-400">
+    <div className="flex items-center gap-2 text-xs">
+      <div className="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+      <span>Loading view...</span>
+    </div>
+  </div>
+);
+
+const ChartsView = dynamic(() => import("./ChartsView").then((mod) => mod.ChartsView), {
+  loading: ViewLoadingFallback,
+});
+
+const KanbanView = dynamic(() => import("./KanbanView").then((mod) => mod.KanbanView), {
+  loading: ViewLoadingFallback,
+});
 
 export function Dashboard() {
   const { isAuthenticated, isLoading } = useAuth();

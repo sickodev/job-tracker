@@ -19,12 +19,88 @@ const COLUMNS: { status: JobStatus; title: string; dot: string }[] = [
   { status: "Offer", title: "Offer 🎉", dot: "bg-emerald-500" },
 ];
 
+interface KanbanCardProps {
+  job: JobApplication;
+  onOpenDetail: (job: JobApplication) => void;
+  onDeleteTarget: (job: JobApplication) => void;
+}
+
+const KanbanCard = React.memo(function KanbanCard({
+  job,
+  onOpenDetail,
+  onDeleteTarget,
+}: KanbanCardProps) {
+  return (
+    <div
+      draggable
+      onDragStart={(e) => e.dataTransfer.setData("text/plain", job.id)}
+      className="p-3 rounded-lg bg-white dark:bg-zinc-800/90 border border-zinc-200 dark:border-zinc-700/60 hover:border-zinc-300 dark:hover:border-zinc-600 shadow-sm transition-colors group cursor-grab active:cursor-grabbing"
+    >
+      <div className="flex items-start justify-between gap-1.5 mb-1.5">
+        <button
+          onClick={() => onOpenDetail(job)}
+          className="flex items-center gap-1.5 font-medium text-xs text-zinc-900 dark:text-zinc-100 hover:text-amber-500 dark:hover:text-amber-400 transition-colors text-left cursor-pointer min-w-0"
+        >
+          <CompanyAvatar
+            company={job.company}
+            companyUrl={job.companyUrl}
+            jobUrl={job.jobUrl}
+            size="xs"
+          />
+          <span className="truncate">{job.company}</span>
+        </button>
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenDetail(job);
+            }}
+            className="p-1 rounded text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+            title="Open details"
+          >
+            <Edit className="w-3 h-3" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDeleteTarget(job);
+            }}
+            className="p-1 rounded text-zinc-400 hover:text-rose-500 cursor-pointer"
+            title="Delete application"
+          >
+            <Trash2 className="w-3 h-3" />
+          </button>
+        </div>
+      </div>
+
+      <div className="text-[11px] text-zinc-600 dark:text-zinc-400 font-normal mb-2">{job.role}</div>
+
+      <div className="flex items-center justify-between text-[10px] text-zinc-500 pt-2 border-t border-zinc-100 dark:border-zinc-700/50 font-mono">
+        <span className="truncate max-w-[85px]">{job.location}</span>
+        {job.salaryMax ? (
+          <span className="text-zinc-700 dark:text-zinc-300 font-medium">
+            ${Math.round(job.salaryMax / 1000)}k
+          </span>
+        ) : null}
+      </div>
+    </div>
+  );
+});
+
 export function KanbanView() {
   const { filteredJobs, updateJob, deleteJob } = useJobs();
   const [editingJob, setEditingJob] = useState<JobApplication | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [detailJob, setDetailJob] = useState<JobApplication | null>(null);
   const [deleteTargetJob, setDeleteTargetJob] = useState<JobApplication | null>(null);
+
+  const handleOpenDetail = React.useCallback((job: JobApplication) => {
+    setDetailJob(job);
+  }, []);
+
+  const handleDeleteTarget = React.useCallback((job: JobApplication) => {
+    setDeleteTargetJob(job);
+  }, []);
 
   const handleDragOver = (e: React.DragEvent) => e.preventDefault();
 
@@ -86,58 +162,12 @@ export function KanbanView() {
               {/* Cards */}
               <div className="flex flex-col gap-2 flex-1 overflow-y-auto">
                 {colJobs.map((job) => (
-                  <div
+                  <KanbanCard
                     key={job.id}
-                    draggable
-                    onDragStart={(e) => e.dataTransfer.setData("text/plain", job.id)}
-                    className="p-3 rounded-lg bg-white dark:bg-zinc-800/90 border border-zinc-200 dark:border-zinc-700/60 hover:border-zinc-300 dark:hover:border-zinc-600 shadow-sm transition-colors group cursor-grab active:cursor-grabbing"
-                  >
-                    <div className="flex items-start justify-between gap-1.5 mb-1.5">
-                      {/* Company name → opens detail panel */}
-                      <button
-                        onClick={() => setDetailJob(job)}
-                        className="flex items-center gap-1.5 font-medium text-xs text-zinc-900 dark:text-zinc-100 hover:text-amber-500 dark:hover:text-amber-400 transition-colors text-left cursor-pointer min-w-0"
-                      >
-                        <CompanyAvatar
-                          company={job.company}
-                          companyUrl={job.companyUrl}
-                          jobUrl={job.jobUrl}
-                          size="xs"
-                        />
-                        <span className="truncate">{job.company}</span>
-                      </button>
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setDetailJob(job); }}
-                          className="p-1 rounded text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
-                          title="Open details"
-                        >
-                          <Edit className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeleteTargetJob(job);
-                          }}
-                          className="p-1 rounded text-zinc-400 hover:text-rose-500 cursor-pointer"
-                          title="Delete application"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="text-[11px] text-zinc-600 dark:text-zinc-400 font-normal mb-2">{job.role}</div>
-
-                    <div className="flex items-center justify-between text-[10px] text-zinc-500 pt-2 border-t border-zinc-100 dark:border-zinc-700/50 font-mono">
-                      <span className="truncate max-w-[85px]">{job.location}</span>
-                      {job.salaryMax ? (
-                        <span className="text-zinc-700 dark:text-zinc-300 font-medium">
-                          ${Math.round(job.salaryMax / 1000)}k
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
+                    job={job}
+                    onOpenDetail={handleOpenDetail}
+                    onDeleteTarget={handleDeleteTarget}
+                  />
                 ))}
               </div>
             </div>
