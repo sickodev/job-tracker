@@ -104,12 +104,6 @@ export function JobDetailPanel({ job: jobProp, onClose }: JobDetailPanelProps) {
     }
   };
 
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -118,7 +112,7 @@ export function JobDetailPanel({ job: jobProp, onClose }: JobDetailPanelProps) {
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
 
-  if (!job || !mounted) return null;
+  if (typeof window === "undefined" || !job) return null;
 
   const sheetName = sheets.find((s) => s.id === job.sheetId)?.name ?? "All Sheets";
 
@@ -133,8 +127,7 @@ export function JobDetailPanel({ job: jobProp, onClose }: JobDetailPanelProps) {
       {/* Slide-over Panel */}
       <div
         ref={panelRef}
-        className="relative z-10 h-full w-full max-w-lg bg-white dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800 shadow-2xl flex flex-col overflow-hidden text-zinc-900 dark:text-zinc-100 transition-colors"
-        style={{ animation: "slideIn 180ms ease-out" }}
+        className="relative z-10 h-full w-full max-w-lg bg-white dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800 shadow-2xl flex flex-col overflow-hidden text-zinc-900 dark:text-zinc-100 transition-colors animate-slide-in-right"
       >
         {/* Top Bar */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900 shrink-0">
@@ -527,13 +520,6 @@ export function JobDetailPanel({ job: jobProp, onClose }: JobDetailPanelProps) {
           onClose();
         }}
       />
-
-      <style jsx global>{`
-        @keyframes slideIn {
-          from { transform: translateX(100%); }
-          to   { transform: translateX(0); }
-        }
-      `}</style>
     </div>,
     document.body
   );
