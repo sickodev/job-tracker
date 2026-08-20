@@ -279,80 +279,89 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
     return sheets.find((s) => s.id === activeSheetId) || sheets[0];
   }, [sheets, activeSheetId]);
 
-  const createSheet = async (name: string, description?: string, color: string = "blue", icon: string = "Briefcase"): Promise<Sheet> => {
-    const id = `sheet-${Date.now()}`;
-    const newSheet: Sheet = {
-      id,
-      name: name.trim(),
-      description: description?.trim() || "",
-      icon: icon || "Briefcase",
-      color,
-      createdAt: new Date().toISOString(),
-    };
+  const createSheet = useCallback(
+    async (name: string, description?: string, color: string = "blue", icon: string = "Briefcase"): Promise<Sheet> => {
+      const id = `sheet-${Date.now()}`;
+      const newSheet: Sheet = {
+        id,
+        name: name.trim(),
+        description: description?.trim() || "",
+        icon: icon || "Briefcase",
+        color,
+        createdAt: new Date().toISOString(),
+      };
 
-    setSheets((prev) => [...prev, newSheet]);
-    setActiveSheetId(id);
+      setSheets((prev) => [...prev, newSheet]);
+      setActiveSheetId(id);
 
-    if (isSupabaseReady && user?.id) {
-      const supabase = getSupabase();
-      if (supabase) {
-        await supabase.from("sheets").insert({
-          id: newSheet.id,
-          user_id: user.id,
-          name: newSheet.name,
-          description: newSheet.description,
-          icon: newSheet.icon,
-          color: newSheet.color,
-        });
+      if (isSupabaseReady && user?.id) {
+        const supabase = getSupabase();
+        if (supabase) {
+          await supabase.from("sheets").insert({
+            id: newSheet.id,
+            user_id: user.id,
+            name: newSheet.name,
+            description: newSheet.description,
+            icon: newSheet.icon,
+            color: newSheet.color,
+          });
+        }
       }
-    }
 
-    return newSheet;
-  };
+      return newSheet;
+    },
+    [isSupabaseReady, user?.id]
+  );
 
-  const updateSheet = async (id: string, data: Partial<Sheet>) => {
-    setSheets((prev) =>
-      prev.map((sheet) => (sheet.id === id ? { ...sheet, ...data } : sheet))
-    );
+  const updateSheet = useCallback(
+    async (id: string, data: Partial<Sheet>) => {
+      setSheets((prev) =>
+        prev.map((sheet) => (sheet.id === id ? { ...sheet, ...data } : sheet))
+      );
 
-    if (isSupabaseReady && user?.id) {
-      const supabase = getSupabase();
-      if (supabase) {
-        await supabase
-          .from("sheets")
-          .update({
-            ...(data.name !== undefined && { name: data.name }),
-            ...(data.description !== undefined && { description: data.description }),
-            ...(data.icon !== undefined && { icon: data.icon }),
-            ...(data.color !== undefined && { color: data.color }),
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", id)
-          .eq("user_id", user.id);
+      if (isSupabaseReady && user?.id) {
+        const supabase = getSupabase();
+        if (supabase) {
+          await supabase
+            .from("sheets")
+            .update({
+              ...(data.name !== undefined && { name: data.name }),
+              ...(data.description !== undefined && { description: data.description }),
+              ...(data.icon !== undefined && { icon: data.icon }),
+              ...(data.color !== undefined && { color: data.color }),
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", id)
+            .eq("user_id", user.id);
+        }
       }
-    }
-  };
+    },
+    [isSupabaseReady, user?.id]
+  );
 
-  const deleteSheet = async (id: string) => {
-    if (sheets.length <= 1) {
-      alert("You must have at least one sheet.");
-      return;
-    }
-    const remainingSheets = sheets.filter((s) => s.id !== id);
-    setSheets(remainingSheets);
-    setAllJobs((prev) => prev.filter((j) => j.sheetId !== id));
-
-    if (activeSheetId === id) {
-      setActiveSheetId(remainingSheets[0]?.id || "");
-    }
-
-    if (isSupabaseReady && user?.id) {
-      const supabase = getSupabase();
-      if (supabase) {
-        await supabase.from("sheets").delete().eq("id", id).eq("user_id", user.id);
+  const deleteSheet = useCallback(
+    async (id: string) => {
+      if (sheets.length <= 1) {
+        alert("You must have at least one sheet.");
+        return;
       }
-    }
-  };
+      const remainingSheets = sheets.filter((s) => s.id !== id);
+      setSheets(remainingSheets);
+      setAllJobs((prev) => prev.filter((j) => j.sheetId !== id));
+
+      if (activeSheetId === id) {
+        setActiveSheetId(remainingSheets[0]?.id || "");
+      }
+
+      if (isSupabaseReady && user?.id) {
+        const supabase = getSupabase();
+        if (supabase) {
+          await supabase.from("sheets").delete().eq("id", id).eq("user_id", user.id);
+        }
+      }
+    },
+    [sheets, activeSheetId, isSupabaseReady, user?.id]
+  );
 
   const activeSheetJobs = useMemo(() => {
     if (activeSheetId === "all") {
@@ -415,129 +424,147 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
       });
   }, [activeSheetJobs, filterOptions]);
 
-  const addJob = async (
-    jobData: Omit<JobApplication, "id" | "createdAt" | "updatedAt">
-  ): Promise<JobApplication> => {
-    const now = new Date().toISOString();
-    const newJob: JobApplication = {
-      ...jobData,
-      id: `job-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-      createdAt: now,
-      updatedAt: now,
-    };
+  const addJob = useCallback(
+    async (
+      jobData: Omit<JobApplication, "id" | "createdAt" | "updatedAt">
+    ): Promise<JobApplication> => {
+      const now = new Date().toISOString();
+      const newJob: JobApplication = {
+        ...jobData,
+        id: `job-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        createdAt: now,
+        updatedAt: now,
+      };
 
-    setAllJobs((prev) => [newJob, ...prev]);
+      setAllJobs((prev) => [newJob, ...prev]);
 
-    if (isSupabaseReady && user?.id) {
-      const supabase = getSupabase();
-      if (supabase) {
-        const dbJob = mapJobToDbJob(newJob, user.id);
-        const { error } = await supabase.from("jobs").insert(dbJob);
-        if (error) {
-          console.error("Supabase insert job error:", error);
+      if (isSupabaseReady && user?.id) {
+        const supabase = getSupabase();
+        if (supabase) {
+          const dbJob = mapJobToDbJob(newJob, user.id);
+          const { error } = await supabase.from("jobs").insert(dbJob);
+          if (error) {
+            console.error("Supabase insert job error:", error);
+          }
         }
       }
-    }
 
-    return newJob;
-  };
+      return newJob;
+    },
+    [isSupabaseReady, user?.id]
+  );
 
-  const updateJob = async (id: string, updates: Partial<JobApplication>) => {
-    const now = new Date().toISOString();
-    setAllJobs((prev) =>
-      prev.map((job) => (job.id === id ? { ...job, ...updates, updatedAt: now } : job))
-    );
+  const updateJob = useCallback(
+    async (id: string, updates: Partial<JobApplication>) => {
+      const now = new Date().toISOString();
+      setAllJobs((prev) =>
+        prev.map((job) => (job.id === id ? { ...job, ...updates, updatedAt: now } : job))
+      );
 
-    if (isSupabaseReady && user?.id) {
-      const supabase = getSupabase();
-      if (supabase) {
-        const payload: Record<string, unknown> = {
-          updated_at: now,
-        };
-        if (updates.company !== undefined) payload.company = updates.company;
-        if (updates.role !== undefined) payload.role = updates.role;
-        if (updates.status !== undefined) payload.status = updates.status;
-        if (updates.sheetId !== undefined) payload.sheet_id = updates.sheetId;
-        if (updates.companyType !== undefined) payload.company_type = updates.companyType;
-        if (updates.workplaceType !== undefined) payload.workplace_type = updates.workplaceType;
-        if (updates.location !== undefined) payload.location = updates.location;
-        if (updates.salaryMin !== undefined) payload.salary_min = updates.salaryMin;
-        if (updates.salaryMax !== undefined) payload.salary_max = updates.salaryMax;
-        if (updates.salaryCurrency !== undefined) payload.salary_currency = updates.salaryCurrency;
-        if (updates.appliedDate !== undefined) payload.applied_date = updates.appliedDate;
-        if (updates.jobUrl !== undefined) payload.job_url = updates.jobUrl;
-        if (updates.contact !== undefined) payload.contact = updates.contact;
-        if (updates.notes !== undefined) payload.notes = updates.notes;
-        if (updates.rating !== undefined) payload.rating = updates.rating;
-        if (updates.priority !== undefined) payload.priority = updates.priority;
-        if (updates.resumeUrl !== undefined) payload.resume_url = updates.resumeUrl;
-        if (updates.resumeName !== undefined) payload.resume_name = updates.resumeName;
+      if (isSupabaseReady && user?.id) {
+        const supabase = getSupabase();
+        if (supabase) {
+          const payload: Record<string, unknown> = {
+            updated_at: now,
+          };
+          if (updates.company !== undefined) payload.company = updates.company;
+          if (updates.role !== undefined) payload.role = updates.role;
+          if (updates.status !== undefined) payload.status = updates.status;
+          if (updates.sheetId !== undefined) payload.sheet_id = updates.sheetId;
+          if (updates.companyType !== undefined) payload.company_type = updates.companyType;
+          if (updates.workplaceType !== undefined) payload.workplace_type = updates.workplaceType;
+          if (updates.location !== undefined) payload.location = updates.location;
+          if (updates.salaryMin !== undefined) payload.salary_min = updates.salaryMin;
+          if (updates.salaryMax !== undefined) payload.salary_max = updates.salaryMax;
+          if (updates.salaryCurrency !== undefined) payload.salary_currency = updates.salaryCurrency;
+          if (updates.appliedDate !== undefined) payload.applied_date = updates.appliedDate;
+          if (updates.jobUrl !== undefined) payload.job_url = updates.jobUrl;
+          if (updates.contact !== undefined) payload.contact = updates.contact;
+          if (updates.notes !== undefined) payload.notes = updates.notes;
+          if (updates.rating !== undefined) payload.rating = updates.rating;
+          if (updates.priority !== undefined) payload.priority = updates.priority;
+          if (updates.resumeUrl !== undefined) payload.resume_url = updates.resumeUrl;
+          if (updates.resumeName !== undefined) payload.resume_name = updates.resumeName;
 
-        await supabase.from("jobs").update(payload).eq("id", id).eq("user_id", user.id);
+          await supabase.from("jobs").update(payload).eq("id", id).eq("user_id", user.id);
+        }
       }
-    }
-  };
+    },
+    [isSupabaseReady, user?.id]
+  );
 
-  const deleteJob = async (id: string) => {
-    setAllJobs((prev) => prev.filter((job) => job.id !== id));
+  const deleteJob = useCallback(
+    async (id: string) => {
+      setAllJobs((prev) => prev.filter((job) => job.id !== id));
 
-    if (isSupabaseReady && user?.id) {
-      const supabase = getSupabase();
-      if (supabase) {
-        await supabase.from("jobs").delete().eq("id", id).eq("user_id", user.id);
+      if (isSupabaseReady && user?.id) {
+        const supabase = getSupabase();
+        if (supabase) {
+          await supabase.from("jobs").delete().eq("id", id).eq("user_id", user.id);
+        }
       }
-    }
-  };
+    },
+    [isSupabaseReady, user?.id]
+  );
 
-  const bulkDeleteJobs = async (ids: string[]) => {
-    const idSet = new Set(ids);
-    setAllJobs((prev) => prev.filter((job) => !idSet.has(job.id)));
+  const bulkDeleteJobs = useCallback(
+    async (ids: string[]) => {
+      const idSet = new Set(ids);
+      setAllJobs((prev) => prev.filter((job) => !idSet.has(job.id)));
 
-    if (isSupabaseReady && user?.id) {
-      const supabase = getSupabase();
-      if (supabase) {
-        await supabase.from("jobs").delete().in("id", ids).eq("user_id", user.id);
+      if (isSupabaseReady && user?.id) {
+        const supabase = getSupabase();
+        if (supabase) {
+          await supabase.from("jobs").delete().in("id", ids).eq("user_id", user.id);
+        }
       }
-    }
-  };
+    },
+    [isSupabaseReady, user?.id]
+  );
 
-  const duplicateJob = async (id: string) => {
-    const existing = allJobs.find((j) => j.id === id);
-    if (!existing) return;
-    const now = new Date().toISOString();
-    const duplicated: JobApplication = {
-      ...existing,
-      id: `job-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-      company: `${existing.company} (Copy)`,
-      createdAt: now,
-      updatedAt: now,
-    };
-    setAllJobs((prev) => [duplicated, ...prev]);
+  const duplicateJob = useCallback(
+    async (id: string) => {
+      const existing = allJobs.find((j) => j.id === id);
+      if (!existing) return;
+      const now = new Date().toISOString();
+      const duplicated: JobApplication = {
+        ...existing,
+        id: `job-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        company: `${existing.company} (Copy)`,
+        createdAt: now,
+        updatedAt: now,
+      };
+      setAllJobs((prev) => [duplicated, ...prev]);
 
-    if (isSupabaseReady && user?.id) {
-      const supabase = getSupabase();
-      if (supabase) {
-        const dbJob = mapJobToDbJob(duplicated, user.id);
-        await supabase.from("jobs").insert(dbJob);
+      if (isSupabaseReady && user?.id) {
+        const supabase = getSupabase();
+        if (supabase) {
+          const dbJob = mapJobToDbJob(duplicated, user.id);
+          await supabase.from("jobs").insert(dbJob);
+        }
       }
-    }
-  };
+    },
+    [allJobs, isSupabaseReady, user?.id]
+  );
 
-  const uploadResume = async (file: File): Promise<{ publicUrl: string; fileName: string } | null> => {
-    if (!user?.id) return null;
-    const res = await uploadJobAttachment(user.id, file);
-    if ("error" in res) {
-      alert(`Upload failed: ${res.error}`);
-      return null;
-    }
-    return res;
-  };
+  const uploadResume = useCallback(
+    async (file: File): Promise<{ publicUrl: string; fileName: string } | null> => {
+      if (!user?.id) return null;
+      const res = await uploadJobAttachment(user.id, file);
+      if ("error" in res) {
+        alert(`Upload failed: ${res.error}`);
+        return null;
+      }
+      return res;
+    },
+    [user?.id]
+  );
 
-  const resetFilterOptions = () => {
+  const resetFilterOptions = useCallback(() => {
     setFilterOptions(defaultFilterOptions);
-  };
+  }, []);
 
-  const resetToSampleData = async () => {
+  const resetToSampleData = useCallback(async () => {
     if (confirm("Reset all sheets and jobs to the default sample dataset? Your current edits will be replaced.")) {
       setSheets(INITIAL_SHEETS);
       setAllJobs(INITIAL_JOBS);
@@ -564,62 +591,65 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
         }
       }
     }
-  };
+  }, [isSupabaseReady, user?.id]);
 
-  const exportToCSV = (targetSheetId?: string) => {
-    const jobsToExport = targetSheetId
-      ? allJobs.filter((j) => j.sheetId === targetSheetId)
-      : activeSheetJobs;
+  const exportToCSV = useCallback(
+    (targetSheetId?: string) => {
+      const jobsToExport = targetSheetId
+        ? allJobs.filter((j) => j.sheetId === targetSheetId)
+        : activeSheetJobs;
 
-    const headers = [
-      "Company",
-      "Role",
-      "Status",
-      "Company Type",
-      "Workplace Type",
-      "Location",
-      "Min Salary",
-      "Max Salary",
-      "Currency",
-      "Applied Date",
-      "Priority",
-      "Job URL",
-      "Contact",
-      "Notes",
-      "Resume URL",
-    ];
+      const headers = [
+        "Company",
+        "Role",
+        "Status",
+        "Company Type",
+        "Workplace Type",
+        "Location",
+        "Min Salary",
+        "Max Salary",
+        "Currency",
+        "Applied Date",
+        "Priority",
+        "Job URL",
+        "Contact",
+        "Notes",
+        "Resume URL",
+      ];
 
-    const csvRows = jobsToExport.map((j) => [
-      `"${j.company.replace(/"/g, '""')}"`,
-      `"${j.role.replace(/"/g, '""')}"`,
-      `"${j.status}"`,
-      `"${j.companyType}"`,
-      `"${j.workplaceType}"`,
-      `"${j.location.replace(/"/g, '""')}"`,
-      j.salaryMin || "",
-      j.salaryMax || "",
-      j.salaryCurrency || "USD",
-      j.appliedDate || "",
-      `"${j.priority}"`,
-      `"${(j.jobUrl || "").replace(/"/g, '""')}"`,
-      `"${(j.contact || "").replace(/"/g, '""')}"`,
-      `"${(j.notes || "").replace(/"/g, '""')}"`,
-      `"${(j.resumeUrl || "").replace(/"/g, '""')}"`,
-    ]);
+      const csvRows = jobsToExport.map((j) => [
+        `"${j.company.replace(/"/g, '""')}"`,
+        `"${j.role.replace(/"/g, '""')}"`,
+        `"${j.status}"`,
+        `"${j.companyType}"`,
+        `"${j.workplaceType}"`,
+        `"${j.location.replace(/"/g, '""')}"`,
+        j.salaryMin || "",
+        j.salaryMax || "",
+        j.salaryCurrency || "USD",
+        j.appliedDate || "",
+        `"${j.priority}"`,
+        `"${(j.jobUrl || "").replace(/"/g, '""')}"`,
+        `"${(j.contact || "").replace(/"/g, '""')}"`,
+        `"${(j.notes || "").replace(/"/g, '""')}"`,
+        `"${(j.resumeUrl || "").replace(/"/g, '""')}"`,
+      ]);
 
-    const csvContent = [headers.join(","), ...csvRows.map((r) => r.join(","))].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    const sheetName = activeSheet?.name || "Job_Tracker";
-    link.setAttribute("href", url);
-    link.setAttribute("download", `${sheetName.replace(/\s+/g, "_")}_Export_${new Date().toISOString().split("T")[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+      const csvContent = [headers.join(","), ...csvRows.map((r) => r.join(","))].join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const sheetName = activeSheet?.name || "Job_Tracker";
+      link.setAttribute("href", url);
+      link.setAttribute("download", `${sheetName.replace(/\s+/g, "_")}_Export_${new Date().toISOString().split("T")[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    },
+    [allJobs, activeSheetJobs, activeSheet]
+  );
 
-  const exportToJSON = () => {
+  const exportToJSON = useCallback(() => {
     const data = {
       sheets,
       jobs: allJobs,
@@ -634,9 +664,9 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
+  }, [sheets, allJobs]);
 
-  const importFromJSON = (jsonData: string): boolean => {
+  const importFromJSON = useCallback((jsonData: string): boolean => {
     try {
       const parsed = JSON.parse(jsonData);
       if (Array.isArray(parsed.sheets) && Array.isArray(parsed.jobs)) {
@@ -652,40 +682,67 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
       console.error("Invalid JSON import:", e);
       return false;
     }
-  };
+  }, []);
+
+  const value = useMemo(
+    () => ({
+      sheets,
+      activeSheetId,
+      activeSheet,
+      setActiveSheetId,
+      createSheet,
+      updateSheet,
+      deleteSheet,
+      allJobs,
+      activeSheetJobs,
+      filteredJobs,
+      isLoadingData,
+      addJob,
+      updateJob,
+      deleteJob,
+      bulkDeleteJobs,
+      duplicateJob,
+      uploadResume,
+      filterOptions,
+      setFilterOptions,
+      resetFilterOptions,
+      resetToSampleData,
+      exportToCSV,
+      exportToJSON,
+      importFromJSON,
+    }),
+    [
+      sheets,
+      activeSheetId,
+      activeSheet,
+      createSheet,
+      updateSheet,
+      deleteSheet,
+      allJobs,
+      activeSheetJobs,
+      filteredJobs,
+      isLoadingData,
+      addJob,
+      updateJob,
+      deleteJob,
+      bulkDeleteJobs,
+      duplicateJob,
+      uploadResume,
+      filterOptions,
+      resetFilterOptions,
+      resetToSampleData,
+      exportToCSV,
+      exportToJSON,
+      importFromJSON,
+    ]
+  );
 
   return (
-    <JobContext.Provider
-      value={{
-        sheets,
-        activeSheetId,
-        activeSheet,
-        setActiveSheetId,
-        createSheet,
-        updateSheet,
-        deleteSheet,
-        allJobs,
-        activeSheetJobs,
-        filteredJobs,
-        isLoadingData,
-        addJob,
-        updateJob,
-        deleteJob,
-        bulkDeleteJobs,
-        duplicateJob,
-        uploadResume,
-        filterOptions,
-        setFilterOptions,
-        resetFilterOptions,
-        resetToSampleData,
-        exportToCSV,
-        exportToJSON,
-        importFromJSON,
-      }}
-    >
+    <JobContext.Provider value={value}>
       {children}
     </JobContext.Provider>
   );
+
 }
 
 export function useJobs() {

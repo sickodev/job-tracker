@@ -34,13 +34,7 @@ export function JobDeletePane({
   onConfirmDelete,
 }: JobDeletePaneProps) {
   const { sheets } = useJobs();
-  const [mounted, setMounted] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -51,7 +45,7 @@ export function JobDeletePane({
     }
   }, [isOpen, onClose]);
 
-  if (!isOpen || !mounted) return null;
+  if (typeof window === "undefined" || !isOpen) return null;
 
   // Normalize target jobs array
   const targetJobs: JobApplication[] = jobs && jobs.length > 0 ? jobs : job ? [job] : [];
@@ -79,8 +73,7 @@ export function JobDeletePane({
       {/* Slide-over Warning Pane */}
       <div
         ref={panelRef}
-        className="relative z-10 h-full w-full max-w-md bg-white dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800 shadow-2xl flex flex-col overflow-hidden text-zinc-900 dark:text-zinc-100 transition-colors"
-        style={{ animation: "slideIn 180ms ease-out" }}
+        className="relative z-10 h-full w-full max-w-md bg-white dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800 shadow-2xl flex flex-col overflow-hidden text-zinc-900 dark:text-zinc-100 transition-colors animate-slide-in-right"
       >
         {/* Top Bar */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-rose-100 dark:border-rose-950/40 bg-rose-50/50 dark:bg-rose-950/20 shrink-0">
@@ -283,13 +276,6 @@ export function JobDeletePane({
           </button>
         </div>
       </div>
-
-      <style jsx global>{`
-        @keyframes slideIn {
-          from { transform: translateX(100%); }
-          to   { transform: translateX(0); }
-        }
-      `}</style>
     </div>,
     document.body
   );

@@ -1,0 +1,71 @@
+// Prisma schema definition
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+enum Role {
+  ADMIN
+  USER
+  DEMO
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String?  @unique
+  username  String   @unique
+  name      String?
+  title     String?
+  avatarUrl String?
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sheets    Sheet[]
+  jobs      Job[]
+}
+
+model Sheet {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  icon        String?  @default("Briefcase")
+  color       String?  @default("blue")
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobs        Job[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Job {
+  id             String   @id @default(uuid())
+  sheetId        String
+  sheet          Sheet    @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company        String
+  role           String
+  status         String   @default("Wishlist")
+  companyType    String   @default("Startup")
+  workplaceType  String   @default("Remote")
+  location       String?
+  salaryMin      Int?
+  salaryMax      Int?
+  salaryCurrency String   @default("USD")
+  appliedDate    String?
+  jobUrl         String?
+  contact        String?
+  notes          String?
+  rating         Int      @default(0)
+  priority       String   @default("Medium")
+  resumeUrl      String?
+  resumeName     String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
