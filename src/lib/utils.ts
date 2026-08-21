@@ -160,3 +160,59 @@ export function validatePassword(password: string): { isValid: boolean; error?: 
   return { isValid: true };
 }
 
+export function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+    reader.readAsDataURL(file);
+  });
+}
+
+export function openDocumentAttachment(url: string, fileName?: string): void {
+  if (!url) return;
+  if (typeof window === "undefined") return;
+
+  if (url.startsWith("data:")) {
+    try {
+      const arr = url.split(",");
+      const mimeMatch = arr[0].match(/:(.*?);/);
+      const mime = mimeMatch ? mimeMatch[1] : "application/octet-stream";
+      const bstr = atob(arr[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      const blob = new Blob([u8arr], { type: mime });
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      if (fileName) {
+        link.download = fileName;
+      }
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        if (document.body.contains(link)) {
+          document.body.removeChild(link);
+        }
+        URL.revokeObjectURL(blobUrl);
+      }, 3000);
+      return;
+    } catch (e) {
+      console.error("Error opening data URL attachment:", e);
+    }
+  }
+
+  // Regular HTTP/HTTPS URL
+  let targetUrl = url;
+  if (!/^https?:\/\//i.test(targetUrl) && !targetUrl.startsWith("blob:") && !targetUrl.startsWith("data:")) {
+    targetUrl = `https://${targetUrl}`;
+  }
+  window.open(targetUrl, "_blank", "noopener,noreferrer");
+}
+
+

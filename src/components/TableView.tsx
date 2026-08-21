@@ -6,7 +6,7 @@ import { JobApplication, JobStatus, CompanyType, WorkplaceType } from "@/types";
 import { JobModal } from "./JobModal";
 import { JobDetailPanel } from "./JobDetailPanel";
 import { JobDeletePane } from "./JobDeletePane";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, openDocumentAttachment } from "@/lib/utils";
 import { CompanyAvatar } from "./CompanyAvatar";
 import {
   Search,
@@ -183,17 +183,18 @@ const JobTableRow = React.memo(function JobTableRow({
             <div className="flex items-center gap-1.5">
               <span className="font-normal text-zinc-800 dark:text-zinc-200">{job.role}</span>
               {job.resumeUrl && (
-                <a
-                  href={job.resumeUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 text-[10px] font-medium border border-amber-200/60 dark:border-amber-700/50 hover:bg-amber-100 transition-colors"
-                  title="View attached resume"
-                  onClick={(e) => e.stopPropagation()}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openDocumentAttachment(job.resumeUrl!, job.resumeName);
+                  }}
+                  className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 text-[10px] font-medium border border-amber-200/60 dark:border-amber-700/50 hover:bg-amber-100 dark:hover:bg-amber-900/60 transition-colors cursor-pointer"
+                  title={job.resumeName ? `View ${job.resumeName}` : "View attached resume"}
                 >
                   <FileText className="w-2.5 h-2.5" />
                   <span>CV</span>
-                </a>
+                </button>
               )}
             </div>
             {job.notes && (
