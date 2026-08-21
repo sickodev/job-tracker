@@ -148,7 +148,7 @@ export function JobModal({ isOpen, onClose, onDelete, editingJob }: JobModalProp
     }
 
     const payload = {
-      sheetId: sheetId || sheets[0]?.id || "default",
+      sheetId: sheetId || sheets[0]?.id || "sheet-applications",
       company: company.trim(),
       companyUrl: companyUrl.trim() || undefined,
       role: role.trim(),
