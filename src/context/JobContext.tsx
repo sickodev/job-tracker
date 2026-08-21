@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react";
 import { JobApplication, Sheet, FilterOptions } from "@/types";
-import { INITIAL_SHEETS, INITIAL_JOBS } from "@/lib/initial-data";
+import { INITIAL_SHEETS, INITIAL_JOBS, DEFAULT_USER_SHEETS } from "@/lib/initial-data";
 import { useAuth } from "./AuthContext";
 import { getSupabase, uploadJobAttachment, isSupabaseConfigured } from "@/lib/supabase/client";
 
@@ -31,6 +31,7 @@ interface JobContextType {
   setFilterOptions: React.Dispatch<React.SetStateAction<FilterOptions>>;
   resetFilterOptions: () => void;
 
+  clearAllData: () => Promise<void>;
   resetToSampleData: () => Promise<void>;
   exportToCSV: (targetSheetId?: string) => void;
   importFromJSON: (jsonData: string) => boolean;
@@ -55,6 +56,7 @@ interface DbJob {
   user_id: string;
   sheet_id: string;
   company: string;
+  company_url?: string;
   role: string;
   status: string;
   company_type?: string;
@@ -91,6 +93,7 @@ function mapDbJobToJob(db: DbJob): JobApplication {
     id: db.id,
     sheetId: db.sheet_id,
     company: db.company,
+    companyUrl: db.company_url || undefined,
     role: db.role,
     status: (db.status as JobApplication["status"]) || "Wishlist",
     companyType: (db.company_type as JobApplication["companyType"]) || "Startup",
@@ -118,6 +121,7 @@ function mapJobToDbJob(job: JobApplication, userId: string): DbJob {
     user_id: userId,
     sheet_id: job.sheetId,
     company: job.company,
+    company_url: job.companyUrl || undefined,
     role: job.role,
     status: job.status,
     company_type: job.companyType,
@@ -143,14 +147,25 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const storagePrefix = user?.username ? `job_tracker_${user.username}_` : "job_tracker_default_";
 
+  const isDemoUser = Boolean(
+    user?.id === "demo-user-id" || user?.role === "DEMO" || user?.username === "alex_tech"
+  );
+  const isSupabaseReady = Boolean(
+    isSupabaseConfigured() &&
+    user?.id &&
+    !user.id.startsWith("local-") &&
+    user.id !== "demo-user-id" &&
+    user.role !== "DEMO"
+  );
+
   const [sheets, setSheets] = useState<Sheet[]>(() => {
     if (typeof window !== "undefined") {
       try {
         const stored = localStorage.getItem(`${storagePrefix}sheets`);
-        if (stored) return JSON.parse(stored);
+        if (stored !== null) return JSON.parse(stored);
       } catch (e) {}
     }
-    return INITIAL_SHEETS;
+    return isDemoUser ? INITIAL_SHEETS : DEFAULT_USER_SHEETS;
   });
   const [activeSheetId, setActiveSheetId] = useState<string>(() => {
     if (typeof window !== "undefined") {
@@ -159,16 +174,18 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
         if (storedActive) return storedActive;
       } catch (e) {}
     }
-    return INITIAL_SHEETS[0]?.id || "sheet-applications";
+    return isDemoUser
+      ? (INITIAL_SHEETS[0]?.id || "sheet-applications")
+      : (DEFAULT_USER_SHEETS[0]?.id || "sheet-applications");
   });
   const [allJobs, setAllJobs] = useState<JobApplication[]>(() => {
     if (typeof window !== "undefined") {
       try {
         const stored = localStorage.getItem(`${storagePrefix}jobs`);
-        if (stored) return JSON.parse(stored);
+        if (stored !== null) return JSON.parse(stored);
       } catch (e) {}
     }
-    return INITIAL_JOBS;
+    return isDemoUser ? INITIAL_JOBS : [];
   });
   const [filterOptions, setFilterOptions] = useState<FilterOptions>(defaultFilterOptions);
   const [isLoadingData, setIsLoadingData] = useState(() => {
@@ -178,20 +195,9 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
     return false;
   });
 
-  const isDemoUser = Boolean(user?.id === "demo-user-id" || user?.role === "DEMO");
-  const isSupabaseReady = Boolean(isSupabaseConfigured() && user?.id && !isDemoUser && user.id !== "local-admin-id");
-
   // Load data: From saved demo data if demo user, from Supabase if logged in, otherwise from localStorage
   const loadData = useCallback(async () => {
     setIsLoadingData(true);
-
-    if (isDemoUser) {
-      setSheets(INITIAL_SHEETS);
-      setAllJobs(INITIAL_JOBS);
-      setActiveSheetId(INITIAL_SHEETS[0]?.id || "sheet-applications");
-      setIsLoadingData(false);
-      return;
-    }
 
     const supabase = getSupabase();
 
@@ -231,31 +237,49 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
           setSheets(loadedSheets);
           setActiveSheetId(loadedSheets[0].id);
 
-          if (dbJobs) {
-            const loadedJobs = (dbJobs as DbJob[]).map(mapDbJobToJob);
-            setAllJobs(loadedJobs);
-          }
+          const loadedJobs = dbJobs ? (dbJobs as DbJob[]).map(mapDbJobToJob) : [];
+          setAllJobs(loadedJobs);
           setIsLoadingData(false);
           return;
         } else {
-          // If a new Supabase user has 0 sheets, seed the initial sample sheets & jobs
-          const initialDbSheets: DbSheet[] = INITIAL_SHEETS.map((s) => ({
-            id: s.id,
-            user_id: user.id!,
-            name: s.name,
-            description: s.description,
-            icon: s.icon,
-            color: s.color,
-          }));
+          // If a new Supabase user has 0 sheets:
+          if (isDemoUser) {
+            const initialDbSheets: DbSheet[] = INITIAL_SHEETS.map((s) => ({
+              id: s.id,
+              user_id: user.id!,
+              name: s.name,
+              description: s.description,
+              icon: s.icon,
+              color: s.color,
+            }));
+            await supabase.from("sheets").insert(initialDbSheets);
 
-          await supabase.from("sheets").insert(initialDbSheets);
+            const initialDbJobs: DbJob[] = INITIAL_JOBS.map((j) => mapJobToDbJob(j, user.id!));
+            await supabase.from("jobs").insert(initialDbJobs);
 
-          const initialDbJobs: DbJob[] = INITIAL_JOBS.map((j) => mapJobToDbJob(j, user.id!));
-          await supabase.from("jobs").insert(initialDbJobs);
+            setSheets(INITIAL_SHEETS);
+            setAllJobs(INITIAL_JOBS);
+            setActiveSheetId(INITIAL_SHEETS[0].id);
+          } else {
+            // Non-demo users get 1 default sheet and 0 demo jobs
+            const defaultSheets = DEFAULT_USER_SHEETS.map((s) => ({
+              ...s,
+              createdAt: new Date().toISOString(),
+            }));
+            const initialDbSheets: DbSheet[] = defaultSheets.map((s) => ({
+              id: s.id,
+              user_id: user.id!,
+              name: s.name,
+              description: s.description,
+              icon: s.icon,
+              color: s.color,
+            }));
+            await supabase.from("sheets").insert(initialDbSheets);
 
-          setSheets(INITIAL_SHEETS);
-          setAllJobs(INITIAL_JOBS);
-          setActiveSheetId(INITIAL_SHEETS[0].id);
+            setSheets(defaultSheets);
+            setAllJobs([]);
+            setActiveSheetId(defaultSheets[0].id);
+          }
           setIsLoadingData(false);
           return;
         }
@@ -264,13 +288,13 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // LocalStorage Fallback (Offline / standard local mode)
+    // LocalStorage Fallback (Offline / standard local mode / demo mode)
     try {
       const storedSheets = localStorage.getItem(`${storagePrefix}sheets`);
       const storedJobs = localStorage.getItem(`${storagePrefix}jobs`);
       const storedActiveSheet = localStorage.getItem(`${storagePrefix}active_sheet`);
 
-      if (storedSheets) {
+      if (storedSheets !== null) {
         const parsed = JSON.parse(storedSheets);
         setSheets(parsed);
         if (parsed.length > 0) {
@@ -281,14 +305,15 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
           setActiveSheetId(validActive);
         }
       } else {
-        setSheets(INITIAL_SHEETS);
-        setActiveSheetId(INITIAL_SHEETS[0]?.id || "sheet-applications");
+        const defaultSheets = isDemoUser ? INITIAL_SHEETS : DEFAULT_USER_SHEETS;
+        setSheets(defaultSheets);
+        setActiveSheetId(defaultSheets[0]?.id || "sheet-applications");
       }
 
-      if (storedJobs) {
+      if (storedJobs !== null) {
         setAllJobs(JSON.parse(storedJobs));
       } else {
-        setAllJobs(INITIAL_JOBS);
+        setAllJobs(isDemoUser ? INITIAL_JOBS : []);
       }
     } catch (e) {
       console.error("Failed to load sheets/jobs from storage:", e);
@@ -301,9 +326,9 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
     loadData();
   }, [loadData]);
 
-  // Persist to localStorage whenever in local mode (not demo or supabase)
+  // Persist to localStorage whenever in local mode (not supabase)
   useEffect(() => {
-    if (!isSupabaseReady && !isDemoUser && !isLoadingData) {
+    if (!isSupabaseReady && !isLoadingData && user) {
       try {
         localStorage.setItem(`${storagePrefix}sheets`, JSON.stringify(sheets));
         localStorage.setItem(`${storagePrefix}jobs`, JSON.stringify(allJobs));
@@ -312,7 +337,7 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
         console.error("Failed to save to localStorage:", e);
       }
     }
-  }, [sheets, allJobs, activeSheetId, storagePrefix, isSupabaseReady, isDemoUser, isLoadingData]);
+  }, [sheets, allJobs, activeSheetId, storagePrefix, isSupabaseReady, isLoadingData, user]);
 
   const activeSheet = useMemo(() => {
     return sheets.find((s) => s.id === activeSheetId) || sheets[0];
@@ -477,17 +502,40 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
       if (isSupabaseReady && user?.id) {
         const supabase = getSupabase();
         if (supabase) {
-          const dbJob = mapJobToDbJob(newJob, user.id);
-          const { error } = await supabase.from("jobs").insert(dbJob);
-          if (error) {
-            console.error("Supabase insert job error:", error);
+          try {
+            // 1. Ensure target sheet exists in Supabase so foreign key constraint does not fail
+            const targetSheet = sheets.find((s) => s.id === newJob.sheetId) || {
+              id: newJob.sheetId,
+              name: "Job Applications",
+              description: "",
+              icon: "Briefcase",
+              color: "blue",
+            };
+
+            await supabase.from("sheets").upsert({
+              id: targetSheet.id,
+              user_id: user.id,
+              name: targetSheet.name,
+              description: targetSheet.description || "",
+              icon: targetSheet.icon || "Briefcase",
+              color: targetSheet.color || "blue",
+            });
+
+            // 2. Insert the job application
+            const dbJob = mapJobToDbJob(newJob, user.id);
+            const { error: insertError } = await supabase.from("jobs").insert(dbJob);
+            if (insertError) {
+              console.error("Supabase insert job error:", insertError.message || insertError);
+            }
+          } catch (err) {
+            console.error("Failed to insert job in Supabase:", err);
           }
         }
       }
 
       return newJob;
     },
-    [isSupabaseReady, user?.id]
+    [isSupabaseReady, user?.id, sheets]
   );
 
   const updateJob = useCallback(
@@ -504,6 +552,7 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
             updated_at: now,
           };
           if (updates.company !== undefined) payload.company = updates.company;
+          if (updates.companyUrl !== undefined) payload.company_url = updates.companyUrl;
           if (updates.role !== undefined) payload.role = updates.role;
           if (updates.status !== undefined) payload.status = updates.status;
           if (updates.sheetId !== undefined) payload.sheet_id = updates.sheetId;
@@ -522,7 +571,10 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
           if (updates.resumeUrl !== undefined) payload.resume_url = updates.resumeUrl;
           if (updates.resumeName !== undefined) payload.resume_name = updates.resumeName;
 
-          await supabase.from("jobs").update(payload).eq("id", id).eq("user_id", user.id);
+          const { error: updateError } = await supabase.from("jobs").update(payload).eq("id", id).eq("user_id", user.id);
+          if (updateError) {
+            console.error("Supabase update job error:", updateError.message || updateError);
+          }
         }
       }
     },
@@ -606,8 +658,46 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
     setFilterOptions(defaultFilterOptions);
   }, []);
 
+  const clearAllData = useCallback(async () => {
+    if (confirm("Clear all job applications and reset to a clean sheet? This action cannot be undone.")) {
+      const defaultSheets = DEFAULT_USER_SHEETS.map((s) => ({
+        ...s,
+        createdAt: new Date().toISOString(),
+      }));
+      setSheets(defaultSheets);
+      setAllJobs([]);
+      setActiveSheetId(defaultSheets[0]?.id || "sheet-applications");
+
+      if (isSupabaseReady && user?.id) {
+        const supabase = getSupabase();
+        if (supabase) {
+          await supabase.from("jobs").delete().eq("user_id", user.id);
+          await supabase.from("sheets").delete().eq("user_id", user.id);
+
+          const dbSheets: DbSheet[] = defaultSheets.map((s) => ({
+            id: s.id,
+            user_id: user.id!,
+            name: s.name,
+            description: s.description,
+            icon: s.icon,
+            color: s.color,
+          }));
+          await supabase.from("sheets").insert(dbSheets);
+        }
+      } else {
+        try {
+          localStorage.setItem(`${storagePrefix}sheets`, JSON.stringify(defaultSheets));
+          localStorage.setItem(`${storagePrefix}jobs`, JSON.stringify([]));
+          localStorage.setItem(`${storagePrefix}active_sheet`, defaultSheets[0]?.id || "sheet-applications");
+        } catch (e) {
+          console.error("Failed to clear localStorage data:", e);
+        }
+      }
+    }
+  }, [isSupabaseReady, user?.id, storagePrefix]);
+
   const resetToSampleData = useCallback(async () => {
-    if (confirm("Reset all sheets and jobs to the default sample dataset? Your current edits will be replaced.")) {
+    if (confirm("Load demo sample dataset (Alex Rivera's 16 jobs across 3 sheets)? Your current data will be replaced.")) {
       setSheets(INITIAL_SHEETS);
       setAllJobs(INITIAL_JOBS);
       setActiveSheetId(INITIAL_SHEETS[0]?.id || "sheet-applications");
@@ -631,9 +721,17 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
           const initialDbJobs: DbJob[] = INITIAL_JOBS.map((j) => mapJobToDbJob(j, user.id!));
           await supabase.from("jobs").insert(initialDbJobs);
         }
+      } else {
+        try {
+          localStorage.setItem(`${storagePrefix}sheets`, JSON.stringify(INITIAL_SHEETS));
+          localStorage.setItem(`${storagePrefix}jobs`, JSON.stringify(INITIAL_JOBS));
+          localStorage.setItem(`${storagePrefix}active_sheet`, INITIAL_SHEETS[0]?.id || "sheet-applications");
+        } catch (e) {
+          console.error("Failed to reset localStorage data:", e);
+        }
       }
     }
-  }, [isSupabaseReady, user?.id]);
+  }, [isSupabaseReady, user?.id, storagePrefix]);
 
   const exportToCSV = useCallback(
     (targetSheetId?: string) => {
@@ -748,6 +846,7 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
       filterOptions,
       setFilterOptions,
       resetFilterOptions,
+      clearAllData,
       resetToSampleData,
       exportToCSV,
       exportToJSON,
@@ -772,6 +871,7 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
       uploadResume,
       filterOptions,
       resetFilterOptions,
+      clearAllData,
       resetToSampleData,
       exportToCSV,
       exportToJSON,

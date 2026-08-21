@@ -96,7 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const meta = authUser.user_metadata || {};
             const username = meta.username || authUser.email?.split("@")[0] || "user";
             
-            setUser({
+            const profile: UserProfile = {
               id: authUser.id,
               email: authUser.email,
               username,
@@ -104,7 +104,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               title: meta.title || "Tech Professional",
               avatarUrl: meta.avatar_url,
               role: meta.role || (username === "admin" ? "ADMIN" : username === "alex_tech" ? "DEMO" : "USER"),
+            };
+
+            // Upsert to public.profiles table in Supabase
+            supabase.from("profiles").upsert({
+              id: authUser.id,
+              username,
+              name: meta.name || username,
+              title: meta.title || "Tech Professional",
+              updated_at: new Date().toISOString(),
+            }).then(({ error }) => {
+              if (error) console.warn("Supabase profile sync notice:", error.message);
             });
+
+            setUser(profile);
+            try {
+              localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(profile));
+            } catch (e) {}
             setIsLoading(false);
             return;
           }
@@ -140,7 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const meta = authUser.user_metadata || {};
           const username = meta.username || authUser.email?.split("@")[0] || "user";
 
-          setUser({
+          const profile: UserProfile = {
             id: authUser.id,
             email: authUser.email,
             username,
@@ -148,7 +164,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             title: meta.title || "Tech Professional",
             avatarUrl: meta.avatar_url,
             role: meta.role || (username === "admin" ? "ADMIN" : username === "alex_tech" ? "DEMO" : "USER"),
+          };
+
+          supabase.from("profiles").upsert({
+            id: authUser.id,
+            username,
+            name: meta.name || username,
+            title: meta.title || "Tech Professional",
+            updated_at: new Date().toISOString(),
+          }).then(({ error }) => {
+            if (error) console.warn("Supabase profile listener sync notice:", error.message);
           });
+
+          setUser(profile);
+          try {
+            localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(profile));
+          } catch (e) {}
         }
       });
 
@@ -183,7 +214,59 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { success: true };
     }
 
-    // 2. Check registered local storage users
+    // 2. Try Supabase Auth first if configured
+    const supabase = getSupabase();
+    let supabaseError: string | undefined;
+
+    if (supabase) {
+      try {
+        const email = formatAuthEmail(usernameOrEmail);
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (!error && data.user) {
+          const meta = data.user.user_metadata || {};
+          const username = meta.username || data.user.email?.split("@")[0] || cleanUsername;
+          const profile: UserProfile = {
+            id: data.user.id,
+            email: data.user.email,
+            username,
+            name: meta.name || username,
+            title: meta.title || "Tech Professional",
+            role: meta.role || (username === "admin" ? "ADMIN" : username === "alex_tech" ? "DEMO" : "USER"),
+          };
+
+          // Save profile to Supabase public.profiles table
+          try {
+            await supabase.from("profiles").upsert({
+              id: data.user.id,
+              username,
+              name: meta.name || username,
+              title: meta.title || "Tech Professional",
+              updated_at: new Date().toISOString(),
+            });
+          } catch (e) {
+            console.warn("Supabase profiles table upsert on login:", e);
+          }
+
+          setUser(profile);
+          try {
+            localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(profile));
+          } catch (e) {
+            console.error("Failed to save session to localStorage:", e);
+          }
+          return { success: true };
+        } else if (error) {
+          supabaseError = error.message;
+        }
+      } catch (e: unknown) {
+        supabaseError = e instanceof Error ? e.message : "Supabase authentication failed";
+      }
+    }
+
+    // 3. Check registered local storage users if Supabase failed or not configured
     try {
       const storedUsersRaw = localStorage.getItem(USERS_STORAGE_KEY);
       const storedUsers = storedUsersRaw ? JSON.parse(storedUsersRaw) : {};
@@ -208,81 +291,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error("Local storage user lookup error:", e);
     }
 
-    // 3. Try Supabase Auth if configured
-    const supabase = getSupabase();
-    let supabaseError: string | undefined;
-
-    if (supabase) {
-      try {
-        const email = formatAuthEmail(usernameOrEmail);
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-        if (!error && data.user) {
-          const meta = data.user.user_metadata || {};
-          const username = meta.username || data.user.email?.split("@")[0] || cleanUsername;
-          const profile: UserProfile = {
-            id: data.user.id,
-            email: data.user.email,
-            username,
-            name: meta.name || username,
-            title: meta.title || "Tech Professional",
-            role: meta.role || (username === "admin" ? "ADMIN" : username === "alex_tech" ? "DEMO" : "USER"),
-          };
-          setUser(profile);
-          try {
-            localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(profile));
-          } catch (e) {
-            console.error("Failed to save session to localStorage:", e);
-          }
-          return { success: true };
-        } else if (error) {
-          supabaseError = error.message;
-
-          // Bypassing "Email not confirmed" error for username-only login
-          if (error.message.toLowerCase().includes("email not confirmed")) {
-            const profile: UserProfile = {
-              id: `local-user-${lowerUsername}`,
-              username: cleanUsername,
-              name: cleanUsername,
-              title: "Software Engineer",
-              role: lowerUsername === "admin" ? "ADMIN" : "USER",
-            };
-            setUser(profile);
-            try {
-              localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(profile));
-              const storedUsersRaw = localStorage.getItem(USERS_STORAGE_KEY);
-              const storedUsers = storedUsersRaw ? JSON.parse(storedUsersRaw) : {};
-              storedUsers[lowerUsername] = {
-                id: profile.id,
-                username: cleanUsername,
-                password: password.trim(),
-                name: cleanUsername,
-                title: "Software Engineer",
-              };
-              localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(storedUsers));
-            } catch (e) {
-              console.error(e);
-            }
-            return { success: true };
-          }
-        }
-      } catch (e: unknown) {
-        supabaseError = e instanceof Error ? e.message : "Supabase authentication failed";
-      }
-    }
-
-    // 4. Auto-register via Supabase if password is valid according to complexity rules
-    if (supabase && supabaseError?.includes("Invalid login credentials") && validatePassword(password).isValid) {
+    // 4. Auto-register via Supabase if user not found and password is valid
+    if (supabase && (supabaseError?.includes("Invalid login credentials") || supabaseError?.includes("not found")) && validatePassword(password).isValid) {
       const signupRes = await register(usernameOrEmail, password);
       if (signupRes.success) return signupRes;
     }
 
-    // 5. Auto-create account for local mode if password meets structure rules
+    // 5. Auto-create account for local mode fallback if password meets complexity rules
     const passwordValidation = validatePassword(password);
-    if (passwordValidation.isValid) {
+    if (!supabase && passwordValidation.isValid) {
       try {
         const storedUsersRaw = localStorage.getItem(USERS_STORAGE_KEY);
         const storedUsers = storedUsersRaw ? JSON.parse(storedUsersRaw) : {};
@@ -312,10 +329,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     let finalError = supabaseError || passwordValidation.error || "User not found or password does not meet requirements";
-    if (finalError.toLowerCase().includes("email not confirmed")) {
-      finalError = "Invalid username or password";
-    }
-
     return { success: false, error: finalError };
   };
 
@@ -337,24 +350,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const displayName = name?.trim() || username;
     const lowerUsername = username.toLowerCase();
 
-    // Save user to local storage backup first
-    try {
-      const storedUsersRaw = localStorage.getItem(USERS_STORAGE_KEY);
-      const storedUsers = storedUsersRaw ? JSON.parse(storedUsersRaw) : {};
-      if (!storedUsers[lowerUsername]) {
-        storedUsers[lowerUsername] = {
-          id: `local-user-${Date.now()}`,
-          username,
-          password: password.trim(),
-          name: displayName,
-          title: "Software Engineer",
-        };
-        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(storedUsers));
-      }
-    } catch (e) {
-      console.error("Failed to backup local user:", e);
-    }
-
     // Supabase Auth Register
     if (supabase) {
       try {
@@ -373,14 +368,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
 
         if (!error && data.user) {
+          let activeUser = data.user;
+          // If signup didn't return an active session, attempt immediate sign-in with password
+          if (!data.session) {
+            const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
+              email,
+              password,
+            });
+            if (!signInErr && signInData.user) {
+              activeUser = signInData.user;
+            }
+          }
+
           const profile: UserProfile = {
-            id: data.user.id,
-            email: data.user.email,
+            id: activeUser.id,
+            email: activeUser.email || email,
             username,
             name: displayName,
             title: "Software Engineer",
             role: "USER",
           };
+
+          // Save user to public.profiles table in Supabase
+          try {
+            await supabase.from("profiles").upsert({
+              id: activeUser.id,
+              username,
+              name: displayName,
+              title: "Software Engineer",
+              updated_at: new Date().toISOString(),
+            });
+          } catch (e) {
+            console.warn("Supabase profiles table upsert error:", e);
+          }
+
           setUser(profile);
           try {
             localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(profile));
@@ -388,13 +409,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             console.error(e);
           }
           return { success: true };
+        } else if (error) {
+          if (error.message.toLowerCase().includes("already registered") || error.message.toLowerCase().includes("already exists")) {
+            return await login(usernameOrEmail, password);
+          }
+          return { success: false, error: error.message };
         }
       } catch (e: unknown) {
-        console.warn("Supabase registration failed, falling back to local storage registration:", e);
+        console.warn("Supabase registration exception:", e);
+        return { success: false, error: e instanceof Error ? e.message : "Registration failed" };
       }
     }
 
-    // Local Storage Register Fallback
+    // Local Storage Register Fallback (When offline / Supabase unconfigured)
     try {
       const storedUsersRaw = localStorage.getItem(USERS_STORAGE_KEY);
       const storedUsers = storedUsersRaw ? JSON.parse(storedUsersRaw) : {};
@@ -407,6 +434,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         title: "Software Engineer",
         role: "USER",
       };
+      storedUsers[lowerUsername] = newUserData;
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(storedUsers));
 
       const profile: UserProfile = {
         id: newUserData.id,
