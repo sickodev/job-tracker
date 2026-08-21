@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { JobApplication, JobStatus, CompanyType, WorkplaceType, Priority } from "@/types";
 import { useJobs } from "@/context/JobContext";
-import { formatDate } from "@/lib/utils";
+import { formatDate, openDocumentAttachment } from "@/lib/utils";
 import { CompanyAvatar } from "./CompanyAvatar";
 import { JobDeletePane } from "./JobDeletePane";
 import {
@@ -22,6 +22,7 @@ import {
   Download,
   ChevronDown,
   Calendar,
+  Link as LinkIcon,
 } from "lucide-react";
 import confetti from "canvas-confetti";
 
@@ -77,6 +78,9 @@ export function JobDetailPanel({ job: jobProp, onClose }: JobDetailPanelProps) {
   const { updateJob, deleteJob, duplicateJob, sheets, allJobs, uploadResume } = useJobs();
   const [isUploading, setIsUploading] = useState(false);
   const [isDeletePaneOpen, setIsDeletePaneOpen] = useState(false);
+  const [docMode, setDocMode] = useState<"upload" | "link">("upload");
+  const [linkInputUrl, setLinkInputUrl] = useState("");
+  const [linkInputName, setLinkInputName] = useState("");
   const panelRef = useRef<HTMLDivElement>(null);
 
   const job = jobProp ? (allJobs.find((j) => j.id === jobProp.id) ?? jobProp) : null;
@@ -438,8 +442,8 @@ export function JobDetailPanel({ job: jobProp, onClose }: JobDetailPanelProps) {
             </div>
           </Section>
 
-          {/* Resume & Attachments (Supabase Storage) */}
-          <Section label="Resume & Documents (Storage Bucket)">
+          {/* Resume & Attachments */}
+          <Section label="Resume & Documents">
             {job.resumeUrl ? (
               <div className="flex items-center justify-between p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700">
                 <div className="flex items-center gap-2.5 min-w-0">
@@ -448,27 +452,33 @@ export function JobDetailPanel({ job: jobProp, onClose }: JobDetailPanelProps) {
                   </div>
                   <div className="min-w-0">
                     <div className="text-xs font-medium text-zinc-900 dark:text-zinc-100 truncate">
-                      {job.resumeName || "Tailored Resume / CV"}
+                      {job.resumeName || "Attached Document"}
                     </div>
-                    <div className="text-[10px] text-zinc-400">Stored in Supabase Bucket</div>
+                    <div className="text-[10px] text-zinc-400">
+                      {job.resumeUrl.startsWith("data:")
+                        ? "Stored Locally in Browser"
+                        : job.resumeUrl.startsWith("http")
+                        ? "External / Cloud Link"
+                        : "Attached Document"}
+                    </div>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <a
-                    href={job.resumeUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-white dark:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-600 transition-colors"
+                  <button
+                    type="button"
+                    onClick={() => openDocumentAttachment(job.resumeUrl!, job.resumeName)}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-white dark:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-600 transition-colors cursor-pointer"
                   >
                     <Download className="w-3 h-3" />
                     <span>View</span>
-                  </a>
+                  </button>
                   <button
+                    type="button"
                     onClick={() => {
                       updateJob(job.id, { resumeUrl: undefined, resumeName: undefined });
                     }}
-                    className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-500 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
+                    className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-500 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
                     title="Remove attachment"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -476,26 +486,95 @@ export function JobDetailPanel({ job: jobProp, onClose }: JobDetailPanelProps) {
                 </div>
               </div>
             ) : (
-              <label className="flex items-center justify-center gap-2 p-3 rounded-lg border border-dashed border-zinc-300 dark:border-zinc-700 hover:border-amber-400 dark:hover:border-amber-400 bg-zinc-50/50 dark:bg-zinc-800/30 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/50 text-xs text-zinc-500 dark:text-zinc-400 transition-colors cursor-pointer">
-                {isUploading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
-                    <span>Uploading attachment to bucket...</span>
-                  </>
+              <div className="space-y-2">
+                <div className="flex items-center justify-end gap-1 text-[11px] mb-1">
+                  <button
+                    type="button"
+                    onClick={() => setDocMode("upload")}
+                    className={`px-2 py-0.5 rounded transition-colors ${
+                      docMode === "upload"
+                        ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 font-medium"
+                        : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+                    }`}
+                  >
+                    Upload File
+                  </button>
+                  <span className="text-zinc-300 dark:text-zinc-700">|</span>
+                  <button
+                    type="button"
+                    onClick={() => setDocMode("link")}
+                    className={`px-2 py-0.5 rounded transition-colors ${
+                      docMode === "link"
+                        ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 font-medium"
+                        : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+                    }`}
+                  >
+                    Paste Link
+                  </button>
+                </div>
+
+                {docMode === "upload" ? (
+                  <label className="flex items-center justify-center gap-2 p-3 rounded-lg border border-dashed border-zinc-300 dark:border-zinc-700 hover:border-amber-400 dark:hover:border-amber-400 bg-zinc-50/50 dark:bg-zinc-800/30 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/50 text-xs text-zinc-500 dark:text-zinc-400 transition-colors cursor-pointer">
+                    {isUploading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
+                        <span>Processing attachment...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4 text-zinc-400" />
+                        <span>Attach Resume / Document (PDF, DOCX, TXT, Images)</span>
+                      </>
+                    )}
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                      onChange={handleFileUpload}
+                      disabled={isUploading}
+                      className="hidden"
+                    />
+                  </label>
                 ) : (
-                  <>
-                    <Upload className="w-4 h-4 text-zinc-400" />
-                    <span>Attach Tailored Resume (PDF / DOCX)</span>
-                  </>
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <LinkIcon className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400" />
+                      <input
+                        type="url"
+                        placeholder="https://drive.google.com/... or resume link"
+                        value={linkInputUrl}
+                        onChange={(e) => setLinkInputUrl(e.target.value)}
+                        className="w-full pl-8 pr-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 text-xs focus:outline-none focus:border-amber-400 transition-colors"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Document label (e.g. Master Resume 2026)"
+                        value={linkInputName}
+                        onChange={(e) => setLinkInputName(e.target.value)}
+                        className="flex-1 px-3 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 text-xs focus:outline-none focus:border-amber-400 transition-colors"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (linkInputUrl.trim()) {
+                            updateJob(job.id, {
+                              resumeUrl: linkInputUrl.trim(),
+                              resumeName: linkInputName.trim() || "Document Link",
+                            });
+                            setLinkInputUrl("");
+                            setLinkInputName("");
+                          }
+                        }}
+                        disabled={!linkInputUrl.trim()}
+                        className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-medium text-xs transition-colors cursor-pointer"
+                      >
+                        Attach Link
+                      </button>
+                    </div>
+                  </div>
                 )}
-                <input
-                  type="file"
-                  accept=".pdf,.doc,.docx"
-                  onChange={handleFileUpload}
-                  disabled={isUploading}
-                  className="hidden"
-                />
-              </label>
+              </div>
             )}
           </Section>
 
