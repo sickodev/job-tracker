@@ -1,5 +1,16 @@
 import { Sheet, JobApplication } from "@/types";
 
+export const DEFAULT_USER_SHEETS: Sheet[] = [
+  {
+    id: "sheet-applications",
+    name: "Job Applications",
+    description: "Track all your active job applications, phone screens, and interviews",
+    icon: "Briefcase",
+    color: "blue",
+    createdAt: new Date().toISOString(),
+  },
+];
+
 export const INITIAL_SHEETS: Sheet[] = [
   {
     id: "sheet-applications",

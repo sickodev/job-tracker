@@ -15,6 +15,8 @@ import {
   Upload,
   Sun,
   Moon,
+  Trash2,
+  Sparkles,
 } from "lucide-react";
 
 interface NavbarProps {
@@ -45,7 +47,7 @@ function getUserInitials(name?: string, username?: string): string {
 
 export function Navbar({ currentView, onViewChange }: NavbarProps) {
   const { user, logout, isSupabaseEnabled } = useAuth();
-  const { resetToSampleData, exportToJSON, importFromJSON } = useJobs();
+  const { clearAllData, resetToSampleData, exportToJSON, importFromJSON } = useJobs();
   const { theme, toggleTheme } = useTheme();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
@@ -135,15 +137,26 @@ export function Navbar({ currentView, onViewChange }: NavbarProps) {
             )}
           </button>
 
-          {/* Reset sample data button */}
-          <button
-            onClick={resetToSampleData}
-            className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-            title="Reset to default sample dataset"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Sample Data</span>
-          </button>
+          {/* Reset / Clear Data Button */}
+          {user?.role === "DEMO" ? (
+            <button
+              onClick={resetToSampleData}
+              className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              title="Reset to Alex Rivera's demo dataset"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Reset Demo</span>
+            </button>
+          ) : (
+            <button
+              onClick={clearAllData}
+              className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
+              title="Clear all applications and reset workspace"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Clear Data</span>
+            </button>
+          )}
 
           {/* User Menu Trigger (Avatar Only) */}
           <div className="relative">
@@ -162,7 +175,7 @@ export function Navbar({ currentView, onViewChange }: NavbarProps) {
                   className="fixed inset-0 z-40"
                   onClick={() => setShowUserMenu(false)}
                 />
-                <div className="absolute right-0 top-10 z-50 w-52 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-lg p-1.5 text-xs">
+                <div className="absolute right-0 top-10 z-50 w-56 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-lg p-1.5 text-xs">
                   <div className="flex items-center gap-2.5 px-2.5 py-2 border-b border-zinc-100 dark:border-zinc-800 mb-1">
                     <div className="w-7 h-7 rounded-lg bg-amber-400 text-zinc-950 flex items-center justify-center font-bold text-xs shrink-0 select-none">
                       {initials}
@@ -219,13 +232,24 @@ export function Navbar({ currentView, onViewChange }: NavbarProps) {
 
                   <button
                     onClick={() => {
+                      clearAllData();
+                      setShowUserMenu(false);
+                    }}
+                    className="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-md text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 font-medium transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-zinc-400" />
+                    <span>Clear Workspace</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
                       resetToSampleData();
                       setShowUserMenu(false);
                     }}
                     className="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-md text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 font-medium transition-colors cursor-pointer"
                   >
-                    <RotateCcw className="w-3.5 h-3.5 text-zinc-400" />
-                    <span>Load Demo Data</span>
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Load Demo Data (Alex)</span>
                   </button>
 
                   <div className="border-t border-zinc-100 dark:border-zinc-800 my-1" />

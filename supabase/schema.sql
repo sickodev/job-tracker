@@ -87,6 +87,7 @@ create table if not exists public.jobs (
   user_id uuid references auth.users on delete cascade not null,
   sheet_id text references public.sheets(id) on delete cascade not null,
   company text not null,
+  company_url text,
   role text not null,
   status text not null default 'Wishlist',
   company_type text default 'Startup',
@@ -106,6 +107,9 @@ create table if not exists public.jobs (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+-- Ensure company_url exists if table already created
+alter table public.jobs add column if not exists company_url text;
 
 -- Enable RLS on jobs
 alter table public.jobs enable row level security;
