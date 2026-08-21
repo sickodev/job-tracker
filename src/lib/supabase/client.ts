@@ -29,39 +29,74 @@ export const getSupabase = (): SupabaseClient | null => {
   return clientInstance;
 };
 
+import { readFileAsDataUrl } from "@/lib/utils";
+
 /**
  * Upload an attachment (resume, offer letter, etc.) to the job-attachments bucket
+ * or fallback gracefully to local data URL when offline / Supabase is unconfigured.
  */
 export async function uploadJobAttachment(
   userId: string,
   file: File
 ): Promise<{ publicUrl: string; fileName: string } | { error: string }> {
   const supabase = getSupabase();
+  
+  // If Supabase is not configured, fall back directly to reading local data URL
   if (!supabase) {
-    return { error: "Supabase is not configured" };
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      return {
+        publicUrl: dataUrl,
+        fileName: file.name,
+      };
+    } catch (e: any) {
+      return { error: e?.message || "Failed to read file locally" };
+    }
   }
 
-  const cleanFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const filePath = `${userId}/${Date.now()}_${cleanFileName}`;
+  try {
+    const cleanFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const filePath = `${userId || "user"}/${Date.now()}_${cleanFileName}`;
 
-  const { error: uploadError } = await supabase.storage
-    .from("job-attachments")
-    .upload(filePath, file, {
-      cacheControl: "3600",
-      upsert: true,
-    });
+    const { error: uploadError } = await supabase.storage
+      .from("job-attachments")
+      .upload(filePath, file, {
+        cacheControl: "3600",
+        upsert: true,
+      });
 
-  if (uploadError) {
-    console.error("Supabase Storage Upload Error:", uploadError);
-    return { error: uploadError.message };
+    if (uploadError) {
+      console.warn("Supabase Storage Upload Error, falling back to local file storage:", uploadError);
+      // Fallback to local Data URL
+      try {
+        const dataUrl = await readFileAsDataUrl(file);
+        return {
+          publicUrl: dataUrl,
+          fileName: file.name,
+        };
+      } catch {
+        return { error: uploadError.message };
+      }
+    }
+
+    const { data } = supabase.storage.from("job-attachments").getPublicUrl(filePath);
+
+    return {
+      publicUrl: data.publicUrl,
+      fileName: file.name,
+    };
+  } catch (err: any) {
+    console.warn("Supabase Storage exception, falling back to local file storage:", err);
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      return {
+        publicUrl: dataUrl,
+        fileName: file.name,
+      };
+    } catch {
+      return { error: err?.message || "Upload failed" };
+    }
   }
-
-  const { data } = supabase.storage.from("job-attachments").getPublicUrl(filePath);
-
-  return {
-    publicUrl: data.publicUrl,
-    fileName: file.name,
-  };
 }
 
 /**

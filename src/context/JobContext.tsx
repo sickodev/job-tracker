@@ -585,13 +585,19 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
 
   const uploadResume = useCallback(
     async (file: File): Promise<{ publicUrl: string; fileName: string } | null> => {
-      if (!user?.id) return null;
-      const res = await uploadJobAttachment(user.id, file);
-      if ("error" in res) {
-        alert(`Upload failed: ${res.error}`);
+      try {
+        const userId = user?.id || "local-user";
+        const res = await uploadJobAttachment(userId, file);
+        if ("error" in res) {
+          alert(`Upload failed: ${res.error}`);
+          return null;
+        }
+        return res;
+      } catch (err: any) {
+        console.error("Upload failed:", err);
+        alert(`Upload failed: ${err?.message || "Unknown error"}`);
         return null;
       }
-      return res;
     },
     [user?.id]
   );
