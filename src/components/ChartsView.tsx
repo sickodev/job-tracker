@@ -148,13 +148,13 @@ export function ChartsView() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Total Applications */}
-        <div className="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm">
+        <div className="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-ambient-low">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Total Applications</span>
             <Briefcase className="w-4 h-4 text-zinc-400" />
           </div>
           <div className="mt-2">
-            <div className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">{totalApps}</div>
+            <div className="text-2xl font-semibold font-mono text-zinc-900 dark:text-zinc-100">{totalApps}</div>
             <p className="text-[11px] text-zinc-500 mt-0.5">
               {activeSheetId === "all" ? "All sheets" : activeSheet?.name}
             </p>
@@ -162,13 +162,13 @@ export function ChartsView() {
         </div>
 
         {/* In Interview Pipeline */}
-        <div className="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm">
+        <div className="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-ambient-low">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Active Interviews</span>
             <Clock className="w-4 h-4 text-amber-500" />
           </div>
           <div className="mt-2">
-            <div className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">{inInterview}</div>
+            <div className="text-2xl font-semibold font-mono text-zinc-900 dark:text-zinc-100">{inInterview}</div>
             <p className="text-[11px] text-zinc-500 mt-0.5">
               Screening, Tech, & Final
             </p>
@@ -176,13 +176,13 @@ export function ChartsView() {
         </div>
 
         {/* Offers */}
-        <div className="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm">
+        <div className="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-ambient-low">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Offers & Win Rate</span>
             <Award className="w-4 h-4 text-emerald-500" />
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <div className="text-2xl font-semibold text-emerald-600 dark:text-emerald-400">{offers}</div>
+            <div className="text-2xl font-semibold font-mono text-emerald-600 dark:text-emerald-400">{offers}</div>
             <span className="text-xs text-zinc-500 font-mono">
               ({offerRate}%)
             </span>
@@ -193,7 +193,7 @@ export function ChartsView() {
         </div>
 
         {/* Target Salary */}
-        <div className="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm">
+        <div className="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-ambient-low">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Avg Target Comp</span>
             <DollarSign className="w-4 h-4 text-zinc-400" />

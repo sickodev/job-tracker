@@ -201,7 +201,7 @@ export function SheetModal({
       {/* Slide-over Job Pane Screen */}
       <div
         ref={panelRef}
-        className="relative z-10 h-full w-full max-w-lg bg-white dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800 shadow-2xl flex flex-col overflow-hidden text-zinc-900 dark:text-zinc-100 transition-colors"
+        className="relative z-10 h-full w-full max-w-lg bg-white dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800 shadow-overlay-lift flex flex-col overflow-hidden text-zinc-900 dark:text-zinc-100 transition-colors"
         style={{ animation: "slideIn 180ms ease-out" }}
       >
         {/* Top Bar */}
@@ -392,7 +392,7 @@ export function SheetModal({
             <div className="flex items-center gap-2">
               <button
                 type="submit"
-                className="px-4 py-2 text-xs font-semibold rounded-lg bg-amber-400 hover:bg-amber-300 text-zinc-950 shadow-sm transition-colors cursor-pointer"
+                className="px-4 py-2 text-xs font-semibold rounded-lg bg-primary-gold hover:bg-amber-300 text-zinc-950 shadow-ambient-low transition-colors cursor-pointer"
               >
                 {editingSheet ? "Save Changes" : "Create Sheet"}
               </button>

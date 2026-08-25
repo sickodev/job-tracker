@@ -196,7 +196,7 @@ export function JobModal({ isOpen, onClose, onDelete, editingJob }: JobModalProp
       {/* Slide-over Pane */}
       <div
         ref={panelRef}
-        className="relative z-10 h-full w-full max-w-lg bg-white dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800 shadow-2xl flex flex-col overflow-hidden text-zinc-900 dark:text-zinc-100 transition-colors animate-slide-in-right"
+        className="relative z-10 h-full w-full max-w-lg bg-white dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800 shadow-overlay-lift flex flex-col overflow-hidden text-zinc-900 dark:text-zinc-100 transition-colors animate-slide-in-right"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-900/70 shrink-0">
@@ -669,7 +669,7 @@ export function JobModal({ isOpen, onClose, onDelete, editingJob }: JobModalProp
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded-lg bg-amber-400 hover:bg-amber-300 text-zinc-950 text-xs font-semibold transition-colors cursor-pointer shadow-sm"
+              className="px-4 py-2 rounded-lg bg-primary-gold hover:bg-amber-300 text-zinc-950 text-xs font-semibold transition-colors cursor-pointer shadow-ambient-low"
             >
               {editingJob ? "Save Changes" : "Create Application"}
             </button>

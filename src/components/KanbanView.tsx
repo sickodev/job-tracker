@@ -34,7 +34,7 @@ const KanbanCard = React.memo(function KanbanCard({
     <div
       draggable
       onDragStart={(e) => e.dataTransfer.setData("text/plain", job.id)}
-      className="p-3 rounded-lg bg-white dark:bg-zinc-800/90 border border-zinc-200 dark:border-zinc-700/60 hover:border-zinc-300 dark:hover:border-zinc-600 shadow-sm transition-colors group cursor-grab active:cursor-grabbing"
+      className="p-3 rounded-lg bg-white dark:bg-zinc-800/90 border border-zinc-200 dark:border-zinc-700/60 hover:border-zinc-300 dark:hover:border-zinc-600 shadow-ambient-low transition-colors group cursor-grab active:cursor-grabbing"
     >
       <div className="flex items-start justify-between gap-1.5 mb-1.5">
         <button
@@ -130,7 +130,7 @@ export function KanbanView() {
             setEditingJob(null);
             setIsModalOpen(true);
           }}
-          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-zinc-950 text-xs font-medium shadow-sm transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary-gold hover:bg-amber-300 text-zinc-950 text-xs font-medium shadow-ambient-low transition-colors cursor-pointer"
         >
           <Plus className="w-3.5 h-3.5" />
           <span>Add Application</span>

@@ -360,7 +360,7 @@ export function TableView() {
   return (
     <div className="flex flex-col flex-1 p-4 sm:p-6 max-w-7xl mx-auto w-full space-y-4">
       {/* Top Filter & Action Bar */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 bg-white dark:bg-zinc-900 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm transition-colors">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 bg-white dark:bg-zinc-900 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-ambient-low transition-colors">
         {/* Search & Quick Filters */}
         <div className="flex flex-wrap items-center gap-2 w-full md:w-auto flex-1">
           {/* Search */}
@@ -373,7 +373,7 @@ export function TableView() {
               onChange={(e) =>
                 setFilterOptions((prev) => ({ ...prev, search: e.target.value }))
               }
-              className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 text-xs focus:outline-none focus:border-amber-400 transition-colors"
+              className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-zinc-50 border border-zinc-200 dark:bg-zinc-800 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 text-xs focus:outline-none focus:border-primary-gold transition-colors"
             />
           </div>
 
@@ -498,7 +498,7 @@ export function TableView() {
 
           <button
             onClick={() => exportToCSV()}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 text-xs font-medium shadow-sm transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 text-xs font-medium shadow-ambient-low transition-colors cursor-pointer"
             title="Export this sheet to CSV"
           >
             <Download className="w-3.5 h-3.5" />
@@ -510,7 +510,7 @@ export function TableView() {
               setEditingJob(null);
               setIsJobModalOpen(true);
             }}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-zinc-950 text-xs font-medium shadow-sm transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary-gold hover:bg-amber-300 text-zinc-950 text-xs font-medium shadow-ambient-low transition-colors cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Add Application</span>
@@ -519,7 +519,7 @@ export function TableView() {
       </div>
 
       {/* Spreadsheet Table Container */}
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm transition-colors">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-ambient-low transition-colors">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             {/* Table Header */}
