@@ -73,7 +73,7 @@ export function Navbar({ currentView, onViewChange }: NavbarProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
         {/* Brand */}
         <div className="flex items-center gap-2.5">
-          <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-amber-400 text-zinc-950 shadow-sm">
+          <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary-gold text-zinc-950 shadow-ambient-low">
             <Briefcase className="w-4 h-4" />
           </div>
           <div className="flex items-center gap-2">
@@ -161,21 +161,21 @@ export function Navbar({ currentView, onViewChange }: NavbarProps) {
           {/* User Menu Trigger (Avatar Only) */}
           <div className="relative">
             <button
-              onClick={() => setShowUserMenu(!showUserMenu)}
-              className="w-7 h-7 rounded-lg bg-amber-400 text-zinc-950 flex items-center justify-center font-bold text-[11px] tracking-wider select-none hover:ring-2 hover:ring-amber-400/40 transition-all cursor-pointer shadow-sm"
-              title={user?.name || user?.username || "Account"}
-            >
-              {initials}
-            </button>
-
-            {/* Dropdown */}
-            {showUserMenu && (
-              <>
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setShowUserMenu(false)}
-                />
-                <div className="absolute right-0 top-10 z-50 w-56 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-lg p-1.5 text-xs">
+               onClick={() => setShowUserMenu(!showUserMenu)}
+               className="w-7 h-7 rounded-lg bg-primary-gold text-zinc-950 flex items-center justify-center font-bold text-[11px] tracking-wider select-none hover:ring-2 hover:ring-primary-gold/40 transition-all cursor-pointer shadow-ambient-low"
+               title={user?.name || user?.username || "Account"}
+             >
+               {initials}
+             </button>
+ 
+             {/* Dropdown */}
+             {showUserMenu && (
+               <>
+                 <div
+                   className="fixed inset-0 z-40"
+                   onClick={() => setShowUserMenu(false)}
+                 />
+                 <div className="absolute right-0 top-10 z-50 w-56 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-tactile-menu p-1.5 text-xs">
                   <div className="flex items-center gap-2.5 px-2.5 py-2 border-b border-zinc-100 dark:border-zinc-800 mb-1">
                     <div className="w-7 h-7 rounded-lg bg-amber-400 text-zinc-950 flex items-center justify-center font-bold text-xs shrink-0 select-none">
                       {initials}

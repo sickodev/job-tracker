@@ -2,9 +2,40 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-@theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+@theme {
+  --color-primary-gold: #fbbf24;
+  --color-neutral-bg-light: #fafafa;
+  --color-neutral-bg-dark: #09090b;
+
+  --color-status-wishlist: #94a3b8;
+  --color-status-applied: #3b82f6;
+  --color-status-screening: #a855f7;
+  --color-status-technical: #f59e0b;
+  --color-status-behavioral: #6366f1;
+  --color-status-offer: #10b981;
+  --color-status-rejected: #f43f5e;
+  --color-status-withdrawn: #64748b;
+
+  --font-sans: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
+
+  /* Custom shadows */
+  --shadow-ambient-low: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-tactile-menu: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-overlay-lift: 0 10px 25px rgba(0, 0, 0, 0.15);
+
+  /* Overriding standard border-radius keys to match Design System:
+     rounded-md (6px): Small Accent Radius (tabs & badges)
+     rounded-lg (8px): Standard Radius (inputs, cards, buttons)
+     rounded-xl (12px): Panel Radius (workspace modules & popups)
+     rounded-3xl (24px): Large overlay panels
+  */
+  --radius-sm: 2px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-3xl: 24px;
 }
 
 body {

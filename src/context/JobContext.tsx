@@ -235,16 +235,51 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
             createdAt: s.created_at || new Date().toISOString(),
           }));
           setSheets(loadedSheets);
-          setActiveSheetId(loadedSheets[0].id);
+          setActiveSheetId((prev) => (loadedSheets.some((s) => s.id === prev) ? prev : loadedSheets[0].id));
 
           const loadedJobs = dbJobs ? (dbJobs as DbJob[]).map(mapDbJobToJob) : [];
-          setAllJobs(loadedJobs);
+
+          // Compare with local storage to avoid losing applications added offline/before sync
+          try {
+            const storedJobsRaw = localStorage.getItem(`${storagePrefix}jobs`);
+            const localJobs: JobApplication[] = storedJobsRaw ? JSON.parse(storedJobsRaw) : [];
+            const dbJobIds = new Set(loadedJobs.map((j) => j.id));
+            const unsyncedJobs = localJobs.filter((j) => !dbJobIds.has(j.id));
+
+            if (unsyncedJobs.length > 0) {
+              for (const unsynced of unsyncedJobs) {
+                const dbJob = mapJobToDbJob(unsynced, user.id);
+                supabase.from("jobs").insert(dbJob).then(({ error }) => {
+                  if (error) console.warn("Supabase auto-sync job:", error.message);
+                });
+              }
+              const merged = [...unsyncedJobs, ...loadedJobs];
+              setAllJobs(merged);
+              localStorage.setItem(`${storagePrefix}jobs`, JSON.stringify(merged));
+            } else {
+              setAllJobs(loadedJobs);
+              localStorage.setItem(`${storagePrefix}jobs`, JSON.stringify(loadedJobs));
+            }
+            localStorage.setItem(`${storagePrefix}sheets`, JSON.stringify(loadedSheets));
+          } catch (e) {
+            setAllJobs(loadedJobs);
+          }
+
           setIsLoadingData(false);
           return;
         } else {
-          // If a new Supabase user has 0 sheets:
-          if (isDemoUser) {
-            const initialDbSheets: DbSheet[] = INITIAL_SHEETS.map((s) => ({
+          // If Supabase returned 0 sheets, sync local sheets & jobs to Supabase
+          try {
+            const storedSheetsRaw = localStorage.getItem(`${storagePrefix}sheets`);
+            const storedJobsRaw = localStorage.getItem(`${storagePrefix}jobs`);
+            const localSheets: Sheet[] = storedSheetsRaw
+              ? JSON.parse(storedSheetsRaw)
+              : (isDemoUser ? INITIAL_SHEETS : DEFAULT_USER_SHEETS);
+            const localJobs: JobApplication[] = storedJobsRaw
+              ? JSON.parse(storedJobsRaw)
+              : (isDemoUser ? INITIAL_JOBS : []);
+
+            const initialDbSheets: DbSheet[] = localSheets.map((s) => ({
               id: s.id,
               user_id: user.id!,
               name: s.name,
@@ -252,33 +287,20 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
               icon: s.icon,
               color: s.color,
             }));
-            await supabase.from("sheets").insert(initialDbSheets);
+            await supabase.from("sheets").upsert(initialDbSheets);
 
-            const initialDbJobs: DbJob[] = INITIAL_JOBS.map((j) => mapJobToDbJob(j, user.id!));
-            await supabase.from("jobs").insert(initialDbJobs);
+            if (localJobs.length > 0) {
+              const initialDbJobs: DbJob[] = localJobs.map((j) => mapJobToDbJob(j, user.id!));
+              await supabase.from("jobs").insert(initialDbJobs);
+            }
 
-            setSheets(INITIAL_SHEETS);
-            setAllJobs(INITIAL_JOBS);
-            setActiveSheetId(INITIAL_SHEETS[0].id);
-          } else {
-            // Non-demo users get 1 default sheet and 0 demo jobs
-            const defaultSheets = DEFAULT_USER_SHEETS.map((s) => ({
-              ...s,
-              createdAt: new Date().toISOString(),
-            }));
-            const initialDbSheets: DbSheet[] = defaultSheets.map((s) => ({
-              id: s.id,
-              user_id: user.id!,
-              name: s.name,
-              description: s.description,
-              icon: s.icon,
-              color: s.color,
-            }));
-            await supabase.from("sheets").insert(initialDbSheets);
-
-            setSheets(defaultSheets);
-            setAllJobs([]);
-            setActiveSheetId(defaultSheets[0].id);
+            setSheets(localSheets);
+            setAllJobs(localJobs);
+            setActiveSheetId(localSheets[0]?.id || "sheet-applications");
+            localStorage.setItem(`${storagePrefix}sheets`, JSON.stringify(localSheets));
+            localStorage.setItem(`${storagePrefix}jobs`, JSON.stringify(localJobs));
+          } catch (e) {
+            console.error("Failed to seed initial user data to Supabase:", e);
           }
           setIsLoadingData(false);
           return;
@@ -326,9 +348,9 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
     loadData();
   }, [loadData]);
 
-  // Persist to localStorage whenever in local mode (not supabase)
+  // Persist to localStorage cache whenever data changes
   useEffect(() => {
-    if (!isSupabaseReady && !isLoadingData && user) {
+    if (!isLoadingData && user) {
       try {
         localStorage.setItem(`${storagePrefix}sheets`, JSON.stringify(sheets));
         localStorage.setItem(`${storagePrefix}jobs`, JSON.stringify(allJobs));
@@ -337,7 +359,7 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
         console.error("Failed to save to localStorage:", e);
       }
     }
-  }, [sheets, allJobs, activeSheetId, storagePrefix, isSupabaseReady, isLoadingData, user]);
+  }, [sheets, allJobs, activeSheetId, storagePrefix, isLoadingData, user]);
 
   const activeSheet = useMemo(() => {
     return sheets.find((s) => s.id === activeSheetId) || sheets[0];
@@ -355,7 +377,13 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
         createdAt: new Date().toISOString(),
       };
 
-      setSheets((prev) => [...prev, newSheet]);
+      setSheets((prev) => {
+        const next = [...prev, newSheet];
+        try {
+          localStorage.setItem(`${storagePrefix}sheets`, JSON.stringify(next));
+        } catch (e) {}
+        return next;
+      });
       setActiveSheetId(id);
 
       if (isSupabaseReady && user?.id) {
@@ -374,14 +402,18 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
 
       return newSheet;
     },
-    [isSupabaseReady, user?.id]
+    [isSupabaseReady, user?.id, storagePrefix]
   );
 
   const updateSheet = useCallback(
     async (id: string, data: Partial<Sheet>) => {
-      setSheets((prev) =>
-        prev.map((sheet) => (sheet.id === id ? { ...sheet, ...data } : sheet))
-      );
+      setSheets((prev) => {
+        const next = prev.map((sheet) => (sheet.id === id ? { ...sheet, ...data } : sheet));
+        try {
+          localStorage.setItem(`${storagePrefix}sheets`, JSON.stringify(next));
+        } catch (e) {}
+        return next;
+      });
 
       if (isSupabaseReady && user?.id) {
         const supabase = getSupabase();
@@ -400,7 +432,7 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
         }
       }
     },
-    [isSupabaseReady, user?.id]
+    [isSupabaseReady, user?.id, storagePrefix]
   );
 
   const deleteSheet = useCallback(
@@ -411,7 +443,17 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
       }
       const remainingSheets = sheets.filter((s) => s.id !== id);
       setSheets(remainingSheets);
-      setAllJobs((prev) => prev.filter((j) => j.sheetId !== id));
+      setAllJobs((prev) => {
+        const next = prev.filter((j) => j.sheetId !== id);
+        try {
+          localStorage.setItem(`${storagePrefix}jobs`, JSON.stringify(next));
+        } catch (e) {}
+        return next;
+      });
+
+      try {
+        localStorage.setItem(`${storagePrefix}sheets`, JSON.stringify(remainingSheets));
+      } catch (e) {}
 
       if (activeSheetId === id) {
         setActiveSheetId(remainingSheets[0]?.id || "");
@@ -424,7 +466,7 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
         }
       }
     },
-    [sheets, activeSheetId, isSupabaseReady, user?.id]
+    [sheets, activeSheetId, isSupabaseReady, user?.id, storagePrefix]
   );
 
   const activeSheetJobs = useMemo(() => {
@@ -497,7 +539,13 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
         updatedAt: now,
       };
 
-      setAllJobs((prev) => [newJob, ...prev]);
+      setAllJobs((prev) => {
+        const next = [newJob, ...prev];
+        try {
+          localStorage.setItem(`${storagePrefix}jobs`, JSON.stringify(next));
+        } catch (e) {}
+        return next;
+      });
 
       if (isSupabaseReady && user?.id) {
         const supabase = getSupabase();
@@ -535,15 +583,19 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
 
       return newJob;
     },
-    [isSupabaseReady, user?.id, sheets]
+    [isSupabaseReady, user?.id, sheets, storagePrefix]
   );
 
   const updateJob = useCallback(
     async (id: string, updates: Partial<JobApplication>) => {
       const now = new Date().toISOString();
-      setAllJobs((prev) =>
-        prev.map((job) => (job.id === id ? { ...job, ...updates, updatedAt: now } : job))
-      );
+      setAllJobs((prev) => {
+        const next = prev.map((job) => (job.id === id ? { ...job, ...updates, updatedAt: now } : job));
+        try {
+          localStorage.setItem(`${storagePrefix}jobs`, JSON.stringify(next));
+        } catch (e) {}
+        return next;
+      });
 
       if (isSupabaseReady && user?.id) {
         const supabase = getSupabase();
@@ -578,12 +630,18 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
         }
       }
     },
-    [isSupabaseReady, user?.id]
+    [isSupabaseReady, user?.id, storagePrefix]
   );
 
   const deleteJob = useCallback(
     async (id: string) => {
-      setAllJobs((prev) => prev.filter((job) => job.id !== id));
+      setAllJobs((prev) => {
+        const next = prev.filter((job) => job.id !== id);
+        try {
+          localStorage.setItem(`${storagePrefix}jobs`, JSON.stringify(next));
+        } catch (e) {}
+        return next;
+      });
 
       if (isSupabaseReady && user?.id) {
         const supabase = getSupabase();
@@ -592,13 +650,19 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
         }
       }
     },
-    [isSupabaseReady, user?.id]
+    [isSupabaseReady, user?.id, storagePrefix]
   );
 
   const bulkDeleteJobs = useCallback(
     async (ids: string[]) => {
       const idSet = new Set(ids);
-      setAllJobs((prev) => prev.filter((job) => !idSet.has(job.id)));
+      setAllJobs((prev) => {
+        const next = prev.filter((job) => !idSet.has(job.id));
+        try {
+          localStorage.setItem(`${storagePrefix}jobs`, JSON.stringify(next));
+        } catch (e) {}
+        return next;
+      });
 
       if (isSupabaseReady && user?.id) {
         const supabase = getSupabase();
@@ -607,7 +671,7 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
         }
       }
     },
-    [isSupabaseReady, user?.id]
+    [isSupabaseReady, user?.id, storagePrefix]
   );
 
   const duplicateJob = useCallback(
@@ -622,7 +686,13 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
         createdAt: now,
         updatedAt: now,
       };
-      setAllJobs((prev) => [duplicated, ...prev]);
+      setAllJobs((prev) => {
+        const next = [duplicated, ...prev];
+        try {
+          localStorage.setItem(`${storagePrefix}jobs`, JSON.stringify(next));
+        } catch (e) {}
+        return next;
+      });
 
       if (isSupabaseReady && user?.id) {
         const supabase = getSupabase();
@@ -632,7 +702,7 @@ export function JobProvider({ children }: { children: React.ReactNode }) {
         }
       }
     },
-    [allJobs, isSupabaseReady, user?.id]
+    [allJobs, isSupabaseReady, user?.id, storagePrefix]
   );
 
   const uploadResume = useCallback(

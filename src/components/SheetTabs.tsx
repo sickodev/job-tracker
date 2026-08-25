@@ -46,9 +46,9 @@ export function SheetTabs() {
           {/* "All Sheets" Tab */}
           <button
             onClick={() => setActiveSheetId("all")}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-all cursor-pointer ${
               activeSheetId === "all"
-                ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700 font-medium shadow-xs"
+                ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700 font-medium shadow-xs"
                 : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100/60 dark:hover:bg-zinc-800/40"
             }`}
           >
@@ -70,9 +70,9 @@ export function SheetTabs() {
               <div
                 key={sheet.id}
                 title={`${sheet.description || sheet.name} (Double-click to edit)`}
-                className={`group relative flex items-center rounded-lg transition-all ${
+                className={`group relative flex items-center rounded-md transition-all ${
                   isActive
-                    ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700 font-medium shadow-xs"
+                    ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-300 dark:border-zinc-700 font-medium shadow-xs"
                     : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100/60 dark:hover:bg-zinc-800/40 border border-transparent"
                 }`}
               >
@@ -91,7 +91,7 @@ export function SheetTabs() {
                     {jobCount}
                   </span>
                 </button>
-
+ 
                 {/* Quick Edit button visible on hover */}
                 <button
                   onClick={(e) => {
@@ -102,9 +102,9 @@ export function SheetTabs() {
                   title="Edit Sheet"
                   className="p-1 rounded text-zinc-400 hover:text-amber-500 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                 >
-                  <Edit2 className="w-3 h-3" />
+                  <Edit2 className="w-3.5 h-3.5" />
                 </button>
-
+ 
                 {/* Delete X button: hovers red and opens Delete Warning Pane */}
                 <button
                   onClick={(e) => {
@@ -114,19 +114,19 @@ export function SheetTabs() {
                   title={`Delete sheet "${sheet.name}"`}
                   className="p-1 rounded text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 opacity-0 group-hover:opacity-100 transition-all cursor-pointer mr-1"
                 >
-                  <X className="w-3 h-3" />
+                  <X className="w-3.5 h-3.5" />
                 </button>
               </div>
             );
           })}
-
+ 
           {/* New Sheet Button */}
           <button
             onClick={() => {
               setEditingSheet(null);
               setIsModalOpen(true);
             }}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800 transition-colors ml-1 cursor-pointer"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800 transition-colors ml-1 cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>New Sheet</span>
